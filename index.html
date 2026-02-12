@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FOUNDRY V5 // ENTERPRISE ONTOLOGY</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOUNDRY V6 // STABLE ENTERPRISE</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script src="https://unpkg.com/globe.gl"></script>
@@ -10,312 +11,276 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape-dagre/2.5.0/cytoscape-dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        :root {
-            --bg: #030304;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.1);
-            --neon-blue: #00f3ff;
-            --neon-pink: #bc13fe;
-            --neon-green: #0aff0a;
-            --text: #ffffff;
+        /* --- RESET & CORE --- */
+        :root { --bg: #050505; --panel: #111; --accent: #00f3ff; --text: #eee; }
+        * { box-sizing: border-box; outline: none; }
+        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
+
+        /* --- UI LAYOUT --- */
+        #app { display: flex; flex-direction: column; height: 100%; }
+
+        /* HEADER / TOOLBAR */
+        #toolbar {
+            height: 60px; background: rgba(10,10,10,0.95); border-bottom: 1px solid #333;
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            z-index: 100; flex-shrink: 0;
         }
 
-        body { margin: 0; background: var(--bg); font-family: 'Segoe UI', sans-serif; overflow: hidden; color: var(--text); }
+        .brand { font-weight: 800; letter-spacing: 2px; font-size: 14px; display:flex; align-items:center; gap:10px; }
+        .brand i { color: var(--accent); }
 
-        /* --- 1. VIEWPORT & CONTAINERS --- */
-        #viewport { position: relative; width: 100vw; height: 100vh; perspective: 1000px; overflow: hidden; }
+        .btn-group { display: flex; gap: 5px; background: #222; padding: 4px; border-radius: 6px; }
         
-        #cy-container { 
-            width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 10; 
-            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        #globe-container { 
-            width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 20; 
-            opacity: 0; pointer-events: none; transition: opacity 0.5s; 
-        }
-
-        /* --- 2. ISO-CONDO MODE (THE MAGIC) --- */
-        /* พื้นหลังคอนโด (Platforms) จะถูกสร้างด้วย JS */
-        .iso-platform {
-            position: absolute; left: 50%; transform: translateX(-50%) rotateX(60deg) rotateZ(-45deg);
-            width: 800px; height: 800px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.05));
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.05), inset 0 0 20px rgba(0,0,0,0.5);
-            pointer-events: none; z-index: 1; opacity: 0; transition: opacity 0.5s, top 0.8s;
-            display: flex; align-items: flex-end; justify-content: flex-end;
-            padding: 20px; font-size: 20px; font-weight: bold; color: rgba(255,255,255,0.2); text-transform: uppercase;
-        }
-
-        /* เอฟเฟกต์ตอนกดปุ่ม Layers */
-        .mode-iso #cy-container {
-            /* เอียงกราฟให้เข้ากับฐาน */
-            transform: scale(0.8) rotateX(0deg); /* Cytoscape 2D แต่เราจะจัดตำแหน่ง Node ให้เหมือน 3D */
-        }
-
-        /* --- 3. UI TOOLBAR (COMPACT) --- */
-        .toolbar {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(10px);
-            border: 1px solid var(--border); border-radius: 50px;
-            padding: 8px 15px; display: flex; gap: 8px; z-index: 100;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
         .btn {
-            background: transparent; border: none; color: #888; width: 40px; height: 40px;
-            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 16px; transition: 0.2s; position: relative;
+            background: transparent; border: none; color: #888; padding: 6px 14px;
+            cursor: pointer; font-size: 12px; font-weight: bold; border-radius: 4px;
+            display: flex; align-items: center; gap: 6px; transition: 0.2s;
         }
-        .btn:hover { background: rgba(255,255,255,0.1); color: #fff; transform: translateY(-2px); }
-        .btn.active { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
+        .btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .btn.active { background: var(--accent); color: #000; }
         
-        /* Tooltip */
-        .btn::after {
-            content: attr(data-tooltip); position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
-            background: #000; color: #fff; font-size: 10px; padding: 4px 8px; border-radius: 4px;
-            opacity: 0; pointer-events: none; transition: 0.2s; white-space: nowrap;
-        }
-        .btn:hover::after { opacity: 1; bottom: -35px; }
+        /* Highlight Special Buttons */
+        .btn-action { color: var(--accent); border: 1px solid #333; }
+        .btn-action:hover { border-color: var(--accent); background: rgba(0, 243, 255, 0.1); }
 
-        /* --- 4. SIDEBAR --- */
+        /* VIEWPORT */
+        #viewport { flex: 1; position: relative; overflow: hidden; }
+        #cy-container, #globe-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #globe-container { z-index: 1; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #cy-container { z-index: 2; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); }
+
+        /* SIDEBAR */
         #sidebar {
-            position: absolute; right: 20px; top: 80px; width: 300px;
-            background: rgba(10, 15, 20, 0.95); border-left: 2px solid var(--neon-blue);
-            backdrop-filter: blur(15px); padding: 20px; border-radius: 0 0 0 20px;
-            transform: translateX(350px); transition: 0.3s; z-index: 100;
+            position: absolute; top: 10px; right: 10px; bottom: 10px; width: 300px;
+            background: rgba(15, 15, 20, 0.95); border: 1px solid #333; border-radius: 8px;
+            backdrop-filter: blur(10px); transform: translateX(320px); transition: transform 0.3s;
+            z-index: 200; display: flex; flex-direction: column;
         }
         #sidebar.active { transform: translateX(0); }
-        
-        /* Node Styles in Sidebar */
-        .kpi-box {
-            background: rgba(255,255,255,0.05); padding: 15px; margin-top: 15px; border-radius: 8px;
-            display: flex; justify-content: space-between;
-        }
-        
+        .sb-header { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .sb-content { padding: 15px; overflow-y: auto; flex: 1; }
+
+        /* HIDDEN INPUT */
         #file-input { display: none; }
-        
-        /* Loading Overlay */
+
+        /* LOADING SPINNER */
         #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 999;
-            display: flex; justify-content: center; align-items: center; color: var(--neon-blue); font-family: monospace;
-            transition: opacity 0.5s;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
+            z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--accent); font-family: monospace; display: none; /* Hide by default */
         }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(0, 243, 255, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
     </style>
 </head>
-<body class="mode-net">
+<body>
 
-    <div id="loader">INITIALIZING FOUNDRY CORE...</div>
-
-    <div id="plat-3" class="iso-platform" style="top: 150px;">Customers & Logistics</div>
-    <div id="plat-2" class="iso-platform" style="top: 350px;">Manufacturing Hub</div>
-    <div id="plat-1" class="iso-platform" style="top: 550px;">Global Suppliers</div>
-
-    <div class="toolbar">
-        <div style="margin-right:10px; font-weight:bold; color:#fff; display:flex; align-items:center;">
-            <i class="fas fa-cube" style="color:var(--neon-blue); margin-right:8px;"></i> V5
-        </div>
-        
-        <button class="btn active" onclick="setMode('network')" data-tooltip="Clean Network"><i class="fas fa-sitemap"></i></button>
-        <button class="btn" onclick="setMode('globe')" data-tooltip="World Map"><i class="fas fa-globe-americas"></i></button>
-        <button class="btn" onclick="setMode('iso')" data-tooltip="Condo Layers"><i class="fas fa-layer-group"></i></button>
-        
-        <div style="width:1px; background:#444; margin:0 5px;"></div>
-        
-        <label for="file-input" class="btn" data-tooltip="Import Excel"><i class="fas fa-file-upload"></i></label>
-        <input type="file" id="file-input" accept=".xlsx, .xls">
-        <button class="btn" onclick="loadDemo()" data-tooltip="Reset Demo"><i class="fas fa-sync-alt"></i></button>
+    <div id="loader">
+        <div class="spinner"></div>
+        <div id="loader-text">PROCESSING DATA...</div>
     </div>
 
-    <div id="viewport">
-        <div id="cy-container"></div>
-        <div id="globe-container"></div>
+    <div id="app">
+        <div id="toolbar">
+            <div class="brand"><i class="fas fa-network-wired"></i> FOUNDRY<span>V6</span></div>
+
+            <div class="btn-group">
+                <button class="btn active" onclick="setMode('network')"><i class="fas fa-project-diagram"></i> Network</button>
+                <button class="btn" onclick="setMode('layers')"><i class="fas fa-layer-group"></i> Layers</button>
+                <button class="btn" onclick="setMode('globe')"><i class="fas fa-globe-americas"></i> Globe</button>
+            </div>
+
+            <div class="btn-group">
+                <label for="file-input" class="btn btn-action"><i class="fas fa-upload"></i> Import</label>
+                <input type="file" id="file-input" accept=".xlsx, .xls">
+                <button class="btn" onclick="loadDemo()"><i class="fas fa-sync"></i> Demo</button>
+            </div>
+        </div>
+
+        <div id="viewport">
+            <div id="cy-container"></div>
+            <div id="globe-container"></div>
+        </div>
     </div>
 
     <div id="sidebar">
-        <h2 id="sb-title" style="margin:0; font-size:18px; color:var(--neon-blue);">OBJECT</h2>
-        <div id="sb-type" style="font-size:11px; color:#888; text-transform:uppercase; margin-bottom:15px;">TYPE</div>
-        <div style="height:1px; background:#333; margin-bottom:15px;"></div>
-        <div id="sb-content" style="font-size:13px; color:#ccc; line-height:1.6;">Select an object...</div>
-        <div class="kpi-box">
-            <div>
-                <div style="font-size:10px; color:#aaa;">STATUS</div>
-                <div style="color:#0aff0a;">ONLINE</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:10px; color:#aaa;">LATENCY</div>
-                <div>12ms</div>
-            </div>
+        <div class="sb-header">
+            <b style="color:#fff;">OBJECT DETAILS</b>
+            <button onclick="closeSidebar()" style="background:none; border:none; color:#666; cursor:pointer;">&times;</button>
+        </div>
+        <div class="sb-content" id="sb-body">
+            Select a node...
         </div>
     </div>
 
     <script>
-        // --- 0. SETUP ---
-        const Colors = { supplier: '#ff3366', factory: '#00f3ff', customer: '#bc13fe', default: '#ffffff' };
-        let cy, globe;
-        let appData = { nodes: [], edges: [] };
+        // --- CONFIGURATION ---
+        const Colors = { 
+            supplier: '#ff4d4d', // Red
+            factory: '#4d79ff',  // Blue
+            customer: '#33ff99', // Green
+            material: '#ffcc00', // Yellow
+            logistics: '#bf80ff' // Purple
+        };
         
-        // Hide Loader
-        setTimeout(() => {
-            document.getElementById('loader').style.opacity = 0;
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-        }, 1500);
+        let cy = null;
+        let globe = null;
+        let appData = { nodes: [], edges: [] };
 
-        // --- 1. CYTOSCAPE (2D & ISO) ---
+        // --- 1. INITIALIZE CYTOSCAPE ---
         function initCy() {
             cy = cytoscape({
                 container: document.getElementById('cy-container'),
                 style: [
+                    // Node Style
                     {
                         selector: 'node',
                         style: {
                             'label': 'data(label)', 'color': '#fff', 'font-size': '10px', 'font-weight': 'bold',
                             'text-valign': 'bottom', 'text-margin-y': 5,
-                            'background-color': '#111', 'border-width': 2, 'border-color': ele => Colors[ele.data('type')] || '#888',
-                            'width': 40, 'height': 40
+                            'background-color': '#111', 'border-width': 2, 
+                            'border-color': ele => Colors[ele.data('type')] || '#888',
+                            'width': 45, 'height': 45,
+                            'text-background-opacity': 0.8, 'text-background-color': '#000', 'text-background-padding': '2px', 'text-background-shape': 'roundrectangle'
                         }
                     },
                     {
                         selector: 'edge',
+                        style: { 'width': 1.5, 'line-color': '#444', 'target-arrow-color': '#444', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' }
+                    },
+                    // *** STYLE สำหรับ COMPOUND NODE (ฐานตึก) ***
+                    {
+                        selector: ':parent',
                         style: {
-                            'width': 1.5, 'line-color': '#444', 'target-arrow-color': '#444', 
-                            'target-arrow-shape': 'triangle', 'curve-style': 'bezier'
+                            'background-opacity': 0.1, 'background-color': '#fff',
+                            'border-width': 1, 'border-color': '#555', 'border-style': 'dashed',
+                            'label': 'data(label)', 'text-valign': 'top', 'text-halign': 'center',
+                            'color': '#aaa', 'font-size': '14px', 'font-weight': 'bold', 'text-margin-y': -10
                         }
                     },
-                    // STYLE สำหรับ ISO-CONDO MODE (ทำให้ดูเป็นตึก)
+                    // Highlight Style
                     {
-                        selector: '.iso-block',
-                        style: {
-                            'shape': 'round-rectangle', 'width': 60, 'height': 40,
-                            'background-opacity': 0.8, 'background-color': '#000',
-                            'border-width': 1, 'border-color': ele => Colors[ele.data('type')] || '#fff',
-                            'shadow-blur': 0, 'shadow-offset-y': 5, 'shadow-color': ele => Colors[ele.data('type')] || '#fff', // Fake 3D depth
-                            'text-valign': 'center', 'text-halign': 'center', 'font-size': '8px'
-                        }
+                        selector: '.highlight',
+                        style: { 'border-color': '#fff', 'border-width': 4, 'shadow-blur': 20, 'shadow-color': '#fff' }
                     }
-                ]
+                ],
+                wheelSensitivity: 0.3
             });
 
-            cy.on('tap', 'node', evt => openSidebar(evt.target.data()));
-            cy.on('tap', evt => { if(evt.target === cy) document.getElementById('sidebar').classList.remove('active'); });
+            // Event Listeners
+            cy.on('tap', 'node', evt => {
+                if(!evt.target.isParent()){
+                    openSidebar(evt.target.data());
+                    cy.elements().removeClass('highlight');
+                    evt.target.addClass('highlight');
+                }
+            });
+            
+            cy.on('tap', evt => { 
+                if(evt.target === cy) closeSidebar(); 
+            });
         }
 
-        // --- 2. MODES LOGIC ---
+        // --- 2. LAYOUT ENGINES ---
         function setMode(mode) {
-            // Update UI
+            // UI Update
             document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active'); // Highlight button
-            document.body.className = `mode-${mode}`;
+            event.currentTarget.classList.add('active');
 
-            // Reset Views
             const cyDiv = document.getElementById('cy-container');
             const globeDiv = document.getElementById('globe-container');
-            const platforms = document.querySelectorAll('.iso-platform');
 
-            // 1. GLOBE MODE
             if (mode === 'globe') {
                 cyDiv.style.opacity = 0; cyDiv.style.pointerEvents = 'none';
                 globeDiv.style.opacity = 1; globeDiv.style.pointerEvents = 'auto';
-                platforms.forEach(p => p.style.opacity = 0);
                 initGlobe();
-            } 
-            // 2. ISO-CONDO MODE
-            else if (mode === 'iso') {
+            } else {
                 cyDiv.style.opacity = 1; cyDiv.style.pointerEvents = 'auto';
                 globeDiv.style.opacity = 0; globeDiv.style.pointerEvents = 'none';
                 
-                // Show Platforms
-                platforms.forEach(p => p.style.opacity = 1);
+                // Clear Parents (Groupings) if switching back to Network
+                const currentNodes = cy.nodes().filter(n => !n.isParent());
+                const currentEdges = cy.edges();
                 
-                // Change Node Style to Blocks
-                cy.elements().addClass('iso-block');
+                if (mode === 'layers') {
+                    // *** LAYER MODE: Group Nodes into Parents ***
+                    // 1. Remove everything first to clean up
+                    cy.elements().remove();
+                    
+                    // 2. Add Parent Nodes (The "Condo" Floors)
+                    cy.add([
+                        { group: 'nodes', data: { id: 'group_customer', label: 'LEVEL 3: CUSTOMERS & SALES' } },
+                        { group: 'nodes', data: { id: 'group_factory', label: 'LEVEL 2: MANUFACTURING HUB' } },
+                        { group: 'nodes', data: { id: 'group_supplier', label: 'LEVEL 1: GLOBAL SUPPLIERS' } }
+                    ]);
 
-                // *** สูตรคำนวณตำแหน่ง CONDO ***
-                cy.batch(() => {
-                    const layers = { supplier: 550, factory: 350, customer: 150 }; // Y positions matching DOM divs
-                    const groupings = { supplier: [], factory: [], customer: [] };
-
-                    // Group nodes
-                    cy.nodes().forEach(n => {
-                        let t = n.data('type');
-                        if(!groupings[t]) t = 'factory'; // fallback
-                        groupings[t].push(n);
+                    // 3. Add Nodes back, assigned to parents
+                    const organizedNodes = appData.nodes.map(n => {
+                        let parentId = 'group_factory'; // Default
+                        if (n.data.type === 'supplier') parentId = 'group_supplier';
+                        if (n.data.type === 'customer' || n.data.type === 'logistics') parentId = 'group_customer';
+                        return { group: 'nodes', data: { ...n.data, parent: parentId } };
                     });
 
-                    // Arrange nodes on each platform
-                    Object.keys(groupings).forEach(type => {
-                        const nodes = groupings[type];
-                        const count = nodes.length;
-                        const rowSize = Math.ceil(Math.sqrt(count));
-                        const baseY = layers[type];
+                    cy.add([...organizedNodes, ...appData.edges]);
 
-                        nodes.forEach((n, idx) => {
-                            const r = Math.floor(idx / rowSize);
-                            const c = idx % rowSize;
-                            // Isometric Grid Calculation
-                            const isoX = (c - r) * 60 + (window.innerWidth/2);
-                            const isoY = (c + r) * 30 + baseY - 100; // Offset to fit platform
-                            
-                            n.position({ x: isoX, y: isoY });
-                        });
-                    });
-                });
-                
-                cy.fit();
-                cy.zoom(1.2);
-            } 
-            // 3. NETWORK MODE (Standard)
-            else {
-                cyDiv.style.opacity = 1; cyDiv.style.pointerEvents = 'auto';
-                globeDiv.style.opacity = 0; globeDiv.style.pointerEvents = 'none';
-                platforms.forEach(p => p.style.opacity = 0);
-                
-                cy.elements().removeClass('iso-block');
-                
-                // *** DAGRE LAYOUT (แก้ปัญหา Network ไม่สวย) ***
-                cy.layout({
-                    name: 'dagre', // ใช้ dagre เพื่อจัด Hierarchy ซ้าย->ขวา สวยๆ
-                    rankDir: 'LR',
-                    padding: 50,
-                    spacingFactor: 1.2,
-                    animate: true, animationDuration: 800
-                }).run();
+                    // 4. Run Layout (Grid inside boxes)
+                    cy.layout({
+                        name: 'dagre', // Dagre handles hierarchy perfectly
+                        rankDir: 'BT', // Bottom to Top
+                        padding: 50,
+                        nodeSep: 50,
+                        rankSep: 150,
+                        animate: true
+                    }).run();
+
+                } else {
+                    // *** NETWORK MODE: Plain Graph ***
+                    cy.elements().remove();
+                    cy.add([...appData.nodes, ...appData.edges]); // Add raw nodes without parents
+                    
+                    cy.layout({
+                        name: 'cose', // Organic layout
+                        animate: true,
+                        nodeRepulsion: 1000000
+                    }).run();
+                }
             }
         }
 
-        // --- 3. GLOBE ENGINE (Fixed Labels) ---
+        // --- 3. GLOBE ENGINE (Fixed) ---
         function initGlobe() {
-            if(globe) return; // Create once
-
+            if(globe) return;
+            
+            // Transform Data for Globe
             const gNodes = appData.nodes.map(n => ({
                 id: n.data.id,
                 name: n.data.label,
                 type: n.data.type,
                 color: Colors[n.data.type] || '#fff',
-                lat: (Math.random() * 160) - 80,
-                lng: (Math.random() * 360) - 180
+                lat: (Math.random() * 140) - 70, // Avoid poles
+                lng: (Math.random() * 360) - 180,
+                val: 5
             }));
             
             const gEdges = appData.edges.map(e => {
                 const src = gNodes.find(n => n.id === e.data.source);
                 const tgt = gNodes.find(n => n.id === e.data.target);
-                return (src && tgt) ? { startLat: src.lat, startLng: src.lng, endLat: tgt.lat, endLng: tgt.lng, color: ['#00f3ff', '#bc13fe'] } : null;
+                return (src && tgt) ? { startLat: src.lat, startLng: src.lng, endLat: tgt.lat, endLng: tgt.lng, color: [src.color, tgt.color] } : null;
             }).filter(x => x);
 
             globe = Globe()
                 (document.getElementById('globe-container'))
-                .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-                .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-                .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+                .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
                 .pointsData(gNodes)
                 .pointColor('color')
-                .pointAltitude(0.1)
-                .pointRadius(0.5)
-                // *** เพิ่ม LABELS ***
+                .pointAltitude(0.05)
+                .pointRadius(0.8)
+                // Labels
                 .labelsData(gNodes)
                 .labelLat(d => d.lat)
                 .labelLng(d => d.lng)
@@ -324,80 +289,108 @@
                 .labelDotRadius(0.5)
                 .labelColor(() => 'rgba(255, 255, 255, 0.75)')
                 .labelResolution(2)
-                // *** ARCS ***
+                .labelAltitude(0.06)
+                // Arcs
                 .arcsData(gEdges)
                 .arcColor('color')
                 .arcDashLength(0.4)
                 .arcDashGap(2)
-                .arcDashAnimateTime(1500)
-                .onPointClick(node => openSidebar({ label: node.name, type: node.type, details: `Loc: ${node.lat.toFixed(2)}, ${node.lng.toFixed(2)}` }));
+                .arcDashAnimateTime(2000)
+                .onPointClick(node => openSidebar({ label: node.name, type: node.type, details: `Lat/Lng: ${node.lat.toFixed(1)}, ${node.lng.toFixed(1)}` }));
         }
 
         // --- 4. DATA LOGIC ---
         function loadDemo() {
-            // Generate Organized Data
-            const nodes = []; const edges = [];
-            // Suppliers
-            for(let i=1;i<=6;i++) nodes.push({group:'nodes', data:{id:`s${i}`, label:`Supplier ${i}`, type:'supplier', details:"Reliability: High"}});
-            // Factories
-            for(let i=1;i<=4;i++) nodes.push({group:'nodes', data:{id:`f${i}`, label:`Factory ${i}`, type:'factory', details:"Output: 85%"}});
-            // Customers
-            for(let i=1;i<=8;i++) nodes.push({group:'nodes', data:{id:`c${i}`, label:`Store ${i}`, type:'customer', details:"Sales: $50k"}});
+            showLoader();
+            setTimeout(() => {
+                const nodes = []; const edges = [];
+                // Suppliers
+                for(let i=1;i<=5;i++) nodes.push({group:'nodes', data:{id:`s${i}`, label:`Supplier ${i}`, type:'supplier', details:'Reliability: 98%'}});
+                // Factories
+                for(let i=1;i<=3;i++) nodes.push({group:'nodes', data:{id:`f${i}`, label:`Gigafactory ${i}`, type:'factory', details:'Output: 95%'}});
+                // Customers
+                for(let i=1;i<=10;i++) nodes.push({group:'nodes', data:{id:`c${i}`, label:`Showroom ${i}`, type:'customer', details:'Sales: High'}});
 
-            // Logic: Supplier -> Factory -> Customer
-            nodes.forEach(n => {
-                if(n.data.type === 'supplier') edges.push({group:'edges', data:{source:n.data.id, target:`f${Math.ceil(Math.random()*4)}`}});
-                if(n.data.type === 'factory') edges.push({group:'edges', data:{source:n.data.id, target:`c${Math.ceil(Math.random()*8)}`}});
-            });
+                // Connections
+                nodes.forEach(n => {
+                    if(n.data.type === 'supplier') edges.push({group:'edges', data:{source:n.data.id, target:`f${Math.ceil(Math.random()*3)}`}});
+                    if(n.data.type === 'factory') edges.push({group:'edges', data:{source:n.data.id, target:`c${Math.ceil(Math.random()*10)}`}});
+                });
 
-            appData = { nodes, edges };
-            updateGraph();
-            setMode('network'); // Default start
+                appData = { nodes, edges };
+                setMode('network'); // Refresh view
+                hideLoader();
+            }, 800);
         }
 
-        function updateGraph() {
-            cy.elements().remove();
-            cy.add([...appData.nodes, ...appData.edges]);
-        }
-
-        // Upload Logic
+        // --- 5. FILE UPLOAD (Fix) ---
         document.getElementById('file-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if(!file) return;
+            
+            showLoader();
+            
             const reader = new FileReader();
             reader.onload = (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const ns = XLSX.utils.sheet_to_json(workbook.Sheets['Nodes']||workbook.Sheets[workbook.SheetNames[0]]);
-                const es = XLSX.utils.sheet_to_json(workbook.Sheets['Edges']||workbook.Sheets[workbook.SheetNames[1]]);
-                
-                appData.nodes = ns.map(n => ({group:'nodes', data:{id:n.id.toString(), label:n.label, type:(n.type||'default').toLowerCase(), details:n.details}}));
-                appData.edges = es.map(e => ({group:'edges', data:{source:e.source.toString(), target:e.target.toString()}}));
-                
-                updateGraph();
-                
-                // Reset Globe to reload data
-                if(globe) { document.getElementById('globe-container').innerHTML = ''; globe=null; }
-                
-                // Refresh Current View
-                const activeBtn = document.querySelector('.btn.active');
-                if(activeBtn && activeBtn.getAttribute('onclick').includes('iso')) setMode('iso');
-                else if(activeBtn && activeBtn.getAttribute('onclick').includes('globe')) setMode('globe');
-                else setMode('network');
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    
+                    const ns = XLSX.utils.sheet_to_json(workbook.Sheets['Nodes']||workbook.Sheets[workbook.SheetNames[0]]);
+                    const es = XLSX.utils.sheet_to_json(workbook.Sheets['Edges']||workbook.Sheets[workbook.SheetNames[1]]);
+                    
+                    appData.nodes = ns.map(n => ({group:'nodes', data:{id:n.id.toString(), label:n.label, type:(n.type||'default').toLowerCase(), details:n.details}}));
+                    appData.edges = es.map(e => ({group:'edges', data:{source:e.source.toString(), target:e.target.toString()}}));
+                    
+                    // Reset View
+                    setMode('network'); 
+                    
+                    // Clear Globe instance to force reload next time
+                    if(globe) { document.getElementById('globe-container').innerHTML = ''; globe = null; }
+                    
+                } catch (err) {
+                    alert("Error parsing Excel. Please check format.");
+                    console.error(err);
+                } finally {
+                    hideLoader();
+                }
             };
             reader.readAsArrayBuffer(file);
         });
 
+        // UI UTILS
         function openSidebar(data) {
             document.getElementById('sidebar').classList.add('active');
-            document.getElementById('sb-title').innerText = data.label;
-            document.getElementById('sb-type').innerText = (data.type||'Object').toUpperCase();
-            document.getElementById('sb-type').style.color = Colors[data.type] || '#fff';
-            document.getElementById('sb-content').innerText = data.details || "No details available.";
+            const color = Colors[data.type] || '#fff';
+            document.getElementById('sb-body').innerHTML = `
+                <h2 style="color:${color}; margin-top:0;">${data.label}</h2>
+                <div style="font-size:11px; color:#aaa; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                    TYPE: ${(data.type||'UNKNOWN').toUpperCase()}
+                </div>
+                <div style="line-height:1.6; color:#ccc; font-size:13px;">
+                    ${data.details || 'System Operational. No specific alerts.'}
+                </div>
+                <div style="margin-top:20px;">
+                    <canvas id="miniChart"></canvas>
+                </div>
+            `;
+            
+            // Mini Chart
+            new Chart(document.getElementById('miniChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Q1','Q2','Q3'],
+                    datasets: [{ label:'Metric', data:[10, 25, 15], backgroundColor: color }]
+                },
+                options: { plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+            });
         }
-        
-        // Init
-        window.onload = () => { initCy(); loadDemo(); };
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('active'); }
+        function showLoader() { document.getElementById('loader').style.display = 'flex'; }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+        // Start
+        window.onload = initCy;
 
     </script>
 </body>
