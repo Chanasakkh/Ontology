@@ -3,166 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Ontology System (Smart View)</title>
+    <title>Palantir Style: Enterprise Ontology</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* --- THEME CONFIG --- */
         :root {
-            --bg-color: #0b0c10;
-            --panel-bg: rgba(31, 40, 51, 0.95);
-            --text-main: #c5c6c7;
-            --accent-blue: #66fcf1;
-            --accent-green: #45a29e;
+            --bg-color: #050505;
+            --panel-bg: rgba(20, 20, 25, 0.95);
+            --border-color: #333;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --accent-gold: #f59e0b;
+            --text-main: #e2e8f0;
+            --text-sub: #94a3b8;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
             margin: 0;
             overflow: hidden;
             display: flex;
             height: 100vh;
         }
 
+        /* --- GRAPH AREA --- */
         #cy {
             width: 100%;
             height: 100%;
-            background-image: radial-gradient(#2d3436 1px, transparent 1px);
-            background-size: 30px 30px;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
             z-index: 1;
         }
 
-        /* Top Bar */
+        /* --- TOP BAR --- */
         .top-bar {
             position: absolute;
-            top: 20px; left: 20px;
-            z-index: 10;
-            display: flex;
-            gap: 15px;
+            top: 0; left: 0; width: 100%; height: 60px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; z-index: 10; pointer-events: none;
         }
 
-        .upload-btn, .reset-btn {
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid #444;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(4px);
-            transition: 0.3s;
+        .brand {
+            font-size: 16px; font-weight: bold; color: var(--text-main); letter-spacing: 2px;
+            display: flex; align-items: center; gap: 10px;
         }
+        .brand i { color: var(--accent-blue); }
 
-        .upload-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
-        .reset-btn:hover { border-color: #ff7675; color: #ff7675; }
-        
+        .controls { pointer-events: auto; display: flex; gap: 10px; padding-right: 40px;}
+
+        .btn {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-color);
+            color: var(--text-main); padding: 8px 16px; border-radius: 4px;
+            cursor: pointer; font-size: 12px; font-weight: 600; text-transform: uppercase;
+            transition: 0.3s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn:hover { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        .btn-reset:hover { background: var(--border-color); border-color: #555; box-shadow: none; }
+
         #file-input { display: none; }
 
-        /* Legend (อธิบายสี) */
+        /* --- LEGEND --- */
         .legend {
-            position: absolute;
-            bottom: 20px; left: 20px;
-            background: rgba(0,0,0,0.7);
-            padding: 15px;
-            border-radius: 8px;
-            z-index: 10;
-            border: 1px solid #333;
-            font-size: 12px;
+            position: absolute; bottom: 20px; left: 20px;
+            background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);
+            z-index: 10; font-size: 11px; backdrop-filter: blur(5px);
         }
-        .legend-item { display: flex; align-items: center; margin-bottom: 5px; gap: 8px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .legend-title { color: var(--text-sub); margin-bottom: 8px; text-transform: uppercase; font-weight: bold; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: #ccc; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
 
-        /* Sidebar */
+        /* --- SIDEBAR DASHBOARD --- */
         #sidebar {
-            position: absolute; top: 0; right: -400px;
-            width: 400px; height: 100%;
+            position: absolute; top: 0; right: -450px;
+            width: 450px; height: 100%;
             background: var(--panel-bg);
-            border-left: 2px solid var(--accent-blue);
-            transition: right 0.3s ease;
-            z-index: 20;
-            box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+            border-left: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            z-index: 20; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex; flex-direction: column;
+            box-shadow: -10px 0 40px rgba(0,0,0,0.8);
         }
         #sidebar.active { right: 0; }
-        
-        .sidebar-header {
-            padding: 20px;
-            background: rgba(0,0,0,0.2);
-            border-bottom: 1px solid #444;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .sidebar-content { padding: 20px; overflow-y: auto; flex: 1; }
-        .close-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
-        
-        h2 { margin: 0; font-size: 18px; color: var(--accent-blue); }
-        .type-badge { font-size: 10px; background: #333; padding: 3px 8px; border-radius: 10px; margin-top: 5px; display: inline-block; color: #aaa; text-transform: uppercase; }
 
-        .kpi-box {
-            background: rgba(255,255,255,0.05);
-            padding: 15px; border-radius: 8px; margin-bottom: 15px;
-            border-left: 3px solid var(--accent-green);
+        /* Sidebar Header */
+        .sidebar-header {
+            padding: 25px 20px; border-bottom: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.2);
         }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-        .data-table td { padding: 8px; border-bottom: 1px solid #444; color: #ddd; }
-        .data-table td:first-child { color: #888; }
+        .node-title { font-size: 20px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .node-meta { display: flex; gap: 10px; align-items: center; font-size: 11px; }
+        .badge { padding: 2px 8px; border-radius: 4px; background: #333; color: #ccc; border: 1px solid #444; }
+        .status-online { color: var(--accent-green); }
+        .status-offline { color: var(--accent-red); }
+
+        .close-btn {
+            position: absolute; top: 20px; right: 20px;
+            background: none; border: none; color: #666; font-size: 20px; cursor: pointer;
+        }
+        .close-btn:hover { color: #fff; }
+
+        /* Sidebar Tabs */
+        .tabs { display: flex; border-bottom: 1px solid var(--border-color); }
+        .tab-btn {
+            flex: 1; background: none; border: none; padding: 15px 0;
+            color: #666; font-size: 12px; font-weight: bold; text-transform: uppercase;
+            cursor: pointer; transition: 0.3s; border-bottom: 2px solid transparent;
+        }
+        .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.02); }
+        .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
+        /* Sidebar Content */
+        .sidebar-content { padding: 20px; overflow-y: auto; flex: 1; }
+        .tab-pane { display: none; animation: fadeIn 0.3s; }
+        .tab-pane.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Component: Data Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px; }
+        .data-table td { padding: 8px 0; border-bottom: 1px solid #333; color: #ccc; }
+        .data-table td:first-child { color: #888; width: 40%; }
+        .data-table td:last-child { font-weight: 600; text-align: right; color: #fff; }
+
+        /* Component: Risk Box */
+        .risk-box {
+            background: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-red);
+            border-left-width: 4px; padding: 15px; border-radius: 4px; margin-bottom: 20px;
+        }
+        .risk-title { color: var(--accent-red); font-size: 11px; font-weight: bold; margin-bottom: 5px; }
+        .risk-desc { font-size: 12px; color: #ffcccc; line-height: 1.4; }
+
+        /* Component: Action Buttons */
+        .action-group { display: grid; gap: 10px; }
+        .action-btn {
+            width: 100%; padding: 12px; background: rgba(255,255,255,0.03);
+            border: 1px solid #444; color: #ccc; border-radius: 4px;
+            cursor: pointer; display: flex; align-items: center; gap: 10px;
+            font-size: 13px; transition: 0.2s;
+        }
+        .action-btn:hover { background: rgba(255,255,255,0.08); border-color: #666; color: #fff; }
+        .action-btn.primary { background: rgba(59, 130, 246, 0.15); border-color: var(--accent-blue); color: #93c5fd; }
+        .action-btn.primary:hover { background: rgba(59, 130, 246, 0.3); }
 
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <label for="file-input" class="upload-btn"><i class="fas fa-upload"></i> Import Excel</label>
-        <input type="file" id="file-input" accept=".xlsx, .xls" />
-        <button class="reset-btn" onclick="resetLayout()"><i class="fas fa-sync"></i> Re-Layout</button>
-    </div>
-
-    <div class="legend">
-        <div style="margin-bottom:8px; font-weight:bold; color:#fff;">NODE TYPES</div>
-        <div class="legend-item"><div class="dot" style="background:#ff7675;"></div> Supplier</div>
-        <div class="legend-item"><div class="dot" style="background:#fdcb6e;"></div> Material</div>
-        <div class="legend-item"><div class="dot" style="background:#74b9ff;"></div> Factory</div>
-        <div class="legend-item"><div class="dot" style="background:#55efc4;"></div> Product</div>
-        <div class="legend-item"><div class="dot" style="background:#a29bfe;"></div> Customer</div>
+        <div class="brand">
+            <i class="fas fa-project-diagram"></i> ONTOLOGY SYSTEM <span style="font-size:10px; color:#666; margin-top:4px;">v2.5 Enterprise</span>
+        </div>
+        <div class="controls">
+            <label for="file-input" class="btn"><i class="fas fa-upload"></i> Import Excel</label>
+            <input type="file" id="file-input" accept=".xlsx, .xls" />
+            <button class="btn btn-reset" onclick="resetLayout()"><i class="fas fa-sync"></i> Re-Layout</button>
+        </div>
     </div>
 
     <div id="cy"></div>
 
+    <div class="legend">
+        <div class="legend-title">Entity Types</div>
+        <div class="legend-item"><div class="dot" style="background:#ef4444;"></div> Supplier</div>
+        <div class="legend-item"><div class="dot" style="background:#f59e0b;"></div> Material</div>
+        <div class="legend-item"><div class="dot" style="background:#3b82f6;"></div> Factory</div>
+        <div class="legend-item"><div class="dot" style="background:#10b981;"></div> Product</div>
+        <div class="legend-item"><div class="dot" style="background:#8b5cf6;"></div> Customer</div>
+    </div>
+
     <div id="sidebar">
         <div class="sidebar-header">
-            <div>
-                <h2 id="sb-title">Node Name</h2>
-                <span class="type-badge" id="sb-type">TYPE</span>
+            <h2 class="node-title" id="sb-title">Node Name</h2>
+            <div class="node-meta">
+                <span class="badge" id="sb-type">TYPE</span>
+                <span id="sb-status" class="status-online"><i class="fas fa-circle" style="font-size:8px;"></i> OPERATIONAL</span>
             </div>
             <button class="close-btn" onclick="closeSidebar()">&times;</button>
         </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('overview', this)">Overview</button>
+            <button class="tab-btn" onclick="switchTab('history', this)">History</button>
+            <button class="tab-btn" onclick="switchTab('actions', this)">Actions</button>
+        </div>
+
         <div class="sidebar-content">
-            <div id="sb-details"></div>
-            <div style="height: 200px; margin-top:20px;">
-                <canvas id="myChart"></canvas>
+            
+            <div id="tab-overview" class="tab-pane active">
+                <div id="sb-details-container"></div>
+
+                <div class="risk-box">
+                    <div class="risk-title"><i class="fas fa-exclamation-triangle"></i> IMPACT ANALYSIS</div>
+                    <div class="risk-desc">
+                        หาก Node นี้หยุดทำงาน จะส่งผลกระทบต่อปลายน้ำ <b>2 Products</b> และอาจทำให้สูญเสียรายได้ประมาณ <b>$2.4M/Day</b>
+                    </div>
+                </div>
             </div>
+
+            <div id="tab-history" class="tab-pane">
+                <div style="height: 220px; background: rgba(0,0,0,0.2); padding: 10px; border-radius:4px; border:1px solid #333;">
+                    <canvas id="historyChart"></canvas>
+                </div>
+                <p style="font-size:11px; color:#666; text-align:center; margin-top:10px;">
+                    Performance data over the last 6 months (Real-time sync enabled)
+                </p>
+            </div>
+
+            <div id="tab-actions" class="tab-pane">
+                <div class="action-group">
+                    <button class="action-btn primary"><i class="fas fa-file-contract"></i> View Contracts / Specs</button>
+                    <button class="action-btn"><i class="fas fa-envelope"></i> Contact Responsible Owner</button>
+                    <button class="action-btn" style="color:#ef4444; border-color:#ef4444;"><i class="fas fa-ban"></i> Flag as Critical Issue</button>
+                </div>
+                
+                <div style="margin-top:25px;">
+                    <div class="legend-title">Recent Activity Log</div>
+                    <div style="font-size:11px; color:#888; border-left:1px solid #444; padding-left:10px; margin-bottom:5px;">
+                        <span style="color:#666;">10:45 AM</span> - System health check passed
+                    </div>
+                    <div style="font-size:11px; color:#888; border-left:1px solid #444; padding-left:10px; margin-bottom:5px;">
+                        <span style="color:#666;">Yesterday</span> - Inventory updated (+500 units)
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
-        // --- 1. CONFIGURATION ---
-        // กำหนดสีให้แต่ละประเภท เพื่อให้ดูง่ายขึ้น
-        const typeColors = {
-            'supplier': '#ff7675', // แดงอ่อน
-            'material': '#fdcb6e', // เหลือง
-            'factory':  '#74b9ff', // ฟ้า
-            'product':  '#55efc4', // เขียว
-            'customer': '#a29bfe', // ม่วง
-            'default':  '#636e72'  // เทา
+        // --- 1. SYSTEM CONFIG ---
+        const colors = {
+            'supplier': '#ef4444',
+            'material': '#f59e0b',
+            'factory':  '#3b82f6',
+            'product':  '#10b981',
+            'customer': '#8b5cf6',
+            'default':  '#64748b'
         };
 
-        var cy = cytoscape({
+        let cy = cytoscape({
             container: document.getElementById('cy'),
             style: [
                 {
@@ -170,163 +260,205 @@
                     style: {
                         'label': 'data(label)',
                         'color': '#fff',
-                        'font-size': '14px',
+                        'font-size': '12px',
                         'font-weight': 'bold',
                         'text-valign': 'bottom',
-                        'text-margin-y': 6,
+                        'text-margin-y': 8,
                         'text-background-color': '#000',
                         'text-background-opacity': 0.7,
-                        'text-background-padding': '3px',
-                        'width': '60px',
-                        'height': '60px',
+                        'text-background-padding': '4px',
+                        'width': '50px',
+                        'height': '50px',
+                        'border-width': 0,
+                        'background-color': ele => colors[ele.data('type')] || colors['default'],
+                        'shadow-blur': 15,
+                        'shadow-color': ele => colors[ele.data('type')] || colors['default'],
+                        'shadow-opacity': 0.4
+                    }
+                },
+                {
+                    selector: 'node:selected',
+                    style: {
                         'border-width': 2,
                         'border-color': '#fff',
-                        'background-color': function(ele){
-                            // เลือกสีตามประเภท (Type)
-                            const type = (ele.data('type') || '').toLowerCase();
-                            return typeColors[type] || typeColors['default'];
-                        }
+                        'shadow-blur': 30,
+                        'shadow-opacity': 0.8
                     }
                 },
                 {
                     selector: 'edge',
                     style: {
                         'width': 2,
-                        'line-color': '#636e72',
-                        'target-arrow-color': '#636e72',
+                        'line-color': '#334155',
+                        'target-arrow-color': '#334155',
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
-                        'label': 'data(label)',
-                        'font-size': '10px',
-                        'color': '#b2bec3',
-                        'text-background-color': '#000',
-                        'text-background-opacity': 0.8
+                        'opacity': 0.5,
+                        'arrow-scale': 1.2
                     }
                 },
                 {
-                    selector: '.highlighted', // Highlight เวลาคลิก
+                    selector: '.highlighted',
                     style: {
-                        'border-width': 4,
-                        'border-color': '#fff',
-                        'shadow-blur': 20,
-                        'shadow-color': '#fff',
                         'line-color': '#fff',
                         'target-arrow-color': '#fff',
+                        'opacity': 1,
+                        'width': 3,
                         'z-index': 999
                     }
                 },
                 {
-                    selector: '.faded', // ตัวที่ไม่เกี่ยวให้จางลง
+                    selector: '.faded',
                     style: { 'opacity': 0.1 }
                 }
-            ]
+            ],
+            layout: { name: 'grid' }
         });
 
         // --- 2. EXCEL IMPORT LOGIC ---
         document.getElementById('file-input').addEventListener('change', function(e) {
-            var file = e.target.files[0];
+            const file = e.target.files[0];
             if (!file) return;
 
-            var reader = new FileReader();
+            const reader = new FileReader();
             reader.onload = function(e) {
-                var data = new Uint8Array(e.target.result);
-                var workbook = XLSX.read(data, {type: 'array'});
-                var nodes = XLSX.utils.sheet_to_json(workbook.Sheets['Nodes']);
-                var edges = XLSX.utils.sheet_to_json(workbook.Sheets['Edges']);
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                
+                // Get Data
+                const nodes = XLSX.utils.sheet_to_json(workbook.Sheets['Nodes'] || workbook.Sheets[workbook.SheetNames[0]]);
+                const edges = XLSX.utils.sheet_to_json(workbook.Sheets['Edges'] || workbook.Sheets[workbook.SheetNames[1]]);
 
                 cy.elements().remove();
 
-                // Add Nodes
                 nodes.forEach(n => {
-                    cy.add({ group: 'nodes', data: { id: n.id.toString(), label: n.label, type: n.type, details: n.details } });
+                    cy.add({ group: 'nodes', data: { 
+                        id: n.id.toString(), 
+                        label: n.label, 
+                        type: (n.type || 'default').toLowerCase(), 
+                        details: n.details 
+                    }});
                 });
 
-                // Add Edges
                 edges.forEach(e => {
-                    cy.add({ group: 'edges', data: { source: e.source.toString(), target: e.target.toString(), label: e.label } });
+                    cy.add({ group: 'edges', data: { 
+                        source: e.source.toString(), 
+                        target: e.target.toString(), 
+                        label: e.label 
+                    }});
                 });
 
-                runLayout(); // จัดระเบียบกราฟ
+                resetLayout();
             };
             reader.readAsArrayBuffer(file);
         });
 
-        function runLayout() {
-            // ใช้ Layout แบบลำดับชั้น (Breadthfirst) แต่ปรับจูนให้กระจายตัวสวยๆ
+        function resetLayout() {
+            // Layout แบบ Hierarchy (ซ้ายไปขวา) เพื่อลดความงง
             cy.layout({
                 name: 'breadthfirst',
                 directed: true,
                 padding: 50,
-                spacingFactor: 1.5, // ดันให้ห่างกันมากขึ้น
+                spacingFactor: 1.5,
                 avoidOverlap: true,
-                animate: true
+                animate: true,
+                animationDuration: 500
             }).run();
         }
-        
-        function resetLayout() { runLayout(); }
 
-        // --- 3. INTERACTION (CLICK & SIDEBAR) ---
+        // --- 3. INTERACTION & DASHBOARD ---
         let chartInstance = null;
 
         cy.on('tap', 'node', function(evt){
-            var node = evt.target;
-            
-            // Highlight Effect
-            cy.elements().removeClass('highlighted faded');
-            var neighbors = node.neighborhood().add(node); // เอาตัวมันเองและเพื่อนบ้าน
-            cy.elements().not(neighbors).addClass('faded'); // ตัวอื่นจาง
-            neighbors.addClass('highlighted'); // ตัวที่เกี่ยวสว่าง
+            const node = evt.target;
+            const data = node.data();
 
-            // Show Sidebar
-            showSidebar(node.data());
+            // Highlight Logic
+            cy.elements().removeClass('highlighted faded');
+            const neighborhood = node.neighborhood().add(node);
+            cy.elements().not(neighborhood).addClass('faded');
+            neighborhood.addClass('highlighted');
+
+            // Open Dashboard
+            openSidebar(data);
         });
 
         cy.on('tap', function(e){
-            if(e.target === cy) {
-                cy.elements().removeClass('highlighted faded');
+            if(e.target === cy){
                 closeSidebar();
+                cy.elements().removeClass('highlighted faded');
             }
         });
 
-        function showSidebar(data) {
-            document.getElementById('sidebar').classList.add('active');
-            document.getElementById('sb-title').innerText = data.label;
-            document.getElementById('sb-type').innerText = data.type || 'UNKNOWN';
+        function openSidebar(data) {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.add('active');
 
-            // Parse Details String (e.g. "Cost: $100 | Stock: 50")
-            let html = '<div class="kpi-box"><table class="data-table">';
+            // Set Header Info
+            document.getElementById('sb-title').innerText = data.label;
+            document.getElementById('sb-type').innerText = (data.type || 'UNKNOWN').toUpperCase();
+            
+            // Generate Mock Status (Online/Offline)
+            const isOnline = Math.random() > 0.2;
+            const statusEl = document.getElementById('sb-status');
+            statusEl.className = isOnline ? 'status-online' : 'status-offline';
+            statusEl.innerHTML = isOnline ? '<i class="fas fa-circle" style="font-size:8px;"></i> OPERATIONAL' : '<i class="fas fa-exclamation-circle" style="font-size:8px;"></i> MAINTENANCE';
+
+            // Populate Overview Table
+            let html = '<table class="data-table">';
             if(data.details) {
-                let parts = data.details.split('|');
-                parts.forEach(p => {
-                    let [k, v] = p.split(':');
-                    if(k && v) html += `<tr><td>${k.trim()}</td><td><b>${v.trim()}</b></td></tr>`;
+                data.details.split('|').forEach(part => {
+                    const [k, v] = part.split(':');
+                    if(k && v) html += `<tr><td>${k.trim()}</td><td>${v.trim()}</td></tr>`;
                 });
             } else {
-                html += '<tr><td>No additional details</td></tr>';
+                html += `<tr><td>ID</td><td>${data.id}</td></tr><tr><td>Status</td><td>Active</td></tr>`;
             }
-            html += '</table></div>';
-            document.getElementById('sb-details').innerHTML = html;
+            html += '</table>';
+            document.getElementById('sb-details-container').innerHTML = html;
 
-            // Render Mock Chart
+            // Reset Tab to first one
+            switchTab('overview', document.querySelector('.tab-btn'));
+            
+            // Render Chart
             renderChart();
         }
 
         function closeSidebar() {
             document.getElementById('sidebar').classList.remove('active');
-            cy.elements().removeClass('highlighted faded');
+        }
+
+        function switchTab(tabName, btn) {
+            // Hide all panes
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            // Show selected
+            document.getElementById('tab-' + tabName).classList.add('active');
+            if(btn) btn.classList.add('active');
         }
 
         function renderChart() {
-            const ctx = document.getElementById('myChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+
+            // Mock Data Generator
+            const mockData = Array.from({length: 6}, () => Math.floor(Math.random() * 100));
+
             chartInstance = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
                     datasets: [{
                         label: 'Performance',
-                        data: [12, 19, 3, 5],
-                        backgroundColor: '#66fcf1'
+                        data: mockData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#fff'
                     }]
                 },
                 options: {
@@ -334,12 +466,16 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        x: { ticks: { color: '#fff' }, grid: { color: '#333' } },
-                        y: { ticks: { color: '#fff' }, grid: { color: '#333' } }
+                        x: { grid: { display: false }, ticks: { color: '#666' } },
+                        y: { grid: { color: '#333' }, ticks: { color: '#666' } }
                     }
                 }
             });
         }
+
+        // Init Layout on Load (Empty)
+        cy.layout({ name: 'grid' }).run();
+
     </script>
 </body>
 </html>
