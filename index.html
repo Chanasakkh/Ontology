@@ -1043,8 +1043,8 @@
                 }
             };
             ontology.nodes.push(node);
+            console.log('✅ Node added to ontology:', node.data.id, node.data.label);
             saveHistory('add_node', node);
-            updateStatistics();
             return node;
         }
 
@@ -1063,8 +1063,8 @@
                 }
             };
             ontology.edges.push(edge);
+            console.log('✅ Edge added to ontology:', edge.data.source, '→', edge.data.target);
             saveHistory('add_edge', edge);
-            updateStatistics();
             return edge;
         }
 
@@ -1173,10 +1173,13 @@
             const file = e.target.files[0];
             if(!file) return;
             
+            console.log('🎯 File selected:', file.name, file.type, file.size, 'bytes');
+            
             showLoader(true);
             
             try {
                 const ext = file.name.split('.').pop().toLowerCase();
+                console.log('📄 File extension:', ext);
                 
                 if(['xlsx', 'xls'].includes(ext)) {
                     await importExcel(file);
@@ -1185,15 +1188,18 @@
                 } else if(['owl', 'rdf'].includes(ext)) {
                     await importOWL(file);
                 } else {
-                    throw new Error('Unsupported file format');
+                    throw new Error('Unsupported file format: ' + ext);
                 }
                 
+                console.log('🎨 Rendering mode:', AppState.currentMode);
                 setMode(AppState.currentMode);
-                showNotification('Import successful!', 'success');
+                
+                const ontology = getCurrentOntology();
+                alert(`✅ Import Success!\n\n📦 Nodes: ${ontology.nodes.length}\n🔗 Edges: ${ontology.edges.length}`);
                 
             } catch(err) {
-                console.error(err);
-                showNotification('Import failed: ' + err.message, 'error');
+                console.error('❌ Import error:', err);
+                alert('❌ Import failed!\n\n' + err.message + '\n\nCheck Console (F12) for details.');
             } finally {
                 showLoader(false);
                 e.target.value = '';
@@ -1201,15 +1207,22 @@
         }
 
         async function importExcel(file) {
+            console.log('📁 Starting Excel import...', file.name);
+            
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data);
+            
+            console.log('📊 Workbook loaded. Sheets:', workbook.SheetNames);
             
             const firstSheetName = workbook.SheetNames[0];
             const rawNodes = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
             
+            console.log('📦 Raw nodes from sheet:', rawNodes.length, rawNodes);
+            
             let rawEdges = [];
             if(workbook.SheetNames.length > 1) {
                 rawEdges = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[1]]);
+                console.log('🔗 Raw edges from sheet:', rawEdges.length, rawEdges);
             }
             
             const ontology = getCurrentOntology();
@@ -1221,12 +1234,15 @@
                 const keys = Object.keys(r);
                 const getId = k => keys.find(key => key.toLowerCase() === k);
                 
-                addNodeToOntology({
+                const nodeData = {
                     id: (r[getId('id')] || generateId()).toString(),
                     label: r[getId('label')] || r[getId('name')] || 'Unnamed',
                     type: (r[getId('type')] || 'concept').toLowerCase(),
                     properties: r
-                });
+                };
+                
+                console.log('➕ Adding node:', nodeData);
+                addNodeToOntology(nodeData);
             });
             
             // Process edges
@@ -1234,13 +1250,23 @@
                 const keys = Object.keys(r);
                 const getId = k => keys.find(key => key.toLowerCase() === k);
                 
-                addEdgeToOntology({
-                    source: (r[getId('source')] || r[getId('from')]).toString(),
-                    target: (r[getId('target')] || r[getId('to')]).toString(),
+                const edgeData = {
+                    source: (r[getId('source')] || r[getId('from')] || '').toString(),
+                    target: (r[getId('target')] || r[getId('to')] || '').toString(),
                     label: r[getId('label')] || r[getId('relation')] || '',
                     relationType: r[getId('type')] || 'relatedTo'
-                });
+                };
+                
+                console.log('🔗 Adding edge:', edgeData);
+                addEdgeToOntology(edgeData);
             });
+            
+            // Update statistics after import
+            updateStatistics();
+            
+            console.log('✅ Import complete!');
+            console.log('📊 Total nodes:', ontology.nodes.length);
+            console.log('🔗 Total edges:', ontology.edges.length);
         }
 
         async function importJSON(file) {
