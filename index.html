@@ -2,160 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FOUNDRY X // DIRECTOR'S CUT</title>
+    <title>FOUNDRY X // ISO-LAYER ENGINE</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script src="https://unpkg.com/globe.gl"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 
     <style>
-        /* --- 1. CORE VARIABLES & THEME --- */
         :root {
-            --bg-deep: #030712;
-            --panel-glass: rgba(17, 24, 39, 0.85);
-            --border-dim: rgba(255, 255, 255, 0.1);
-            --accent-primary: #0ea5e9; /* Sky Blue */
-            --accent-secondary: #8b5cf6; /* Violet */
-            --accent-success: #10b981;
-            --accent-danger: #ef4444;
-            --accent-warning: #f59e0b;
-            --font-mono: 'Courier New', Courier, monospace;
-            --font-ui: 'Segoe UI', system-ui, sans-serif;
-            --z-loader: 9999;
-            --z-hud: 1000;
-            --z-panel: 500;
+            --bg: #050505;
+            --panel: rgba(20, 20, 25, 0.9);
+            --border: #333;
+            --accent: #3b82f6;
+            --text: #e2e8f0;
         }
+        body { margin: 0; background: var(--bg); font-family: 'Segoe UI', sans-serif; overflow: hidden; color: var(--text); }
 
-        * { box-sizing: border-box; user-select: none; }
-        body { margin: 0; background: var(--bg-deep); color: #e2e8f0; font-family: var(--font-ui); overflow: hidden; }
-
-        /* --- 2. BOOT LOADER (HACKER STYLE) --- */
-        #boot-screen {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000; z-index: var(--z-loader);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-family: var(--font-mono); color: var(--accent-primary);
-        }
-        .boot-log { width: 400px; height: 200px; overflow: hidden; font-size: 12px; opacity: 0.8; margin-bottom: 20px; text-align: left; }
-        .progress-bar { width: 300px; height: 2px; background: #333; position: relative; }
-        .progress-fill { height: 100%; background: var(--accent-primary); width: 0%; transition: width 0.1s; box-shadow: 0 0 10px var(--accent-primary); }
-        .hidden { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
-
-        /* --- 3. MAIN LAYOUT --- */
+        /* VIEWPORTS */
         #viewport { position: relative; width: 100vw; height: 100vh; }
         #cy-container, #globe-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: opacity 0.5s; }
-        
-        /* Grid Background for 2D */
-        #cy-container { background: radial-gradient(circle at 50% 50%, #1a202c 0%, #000 100%); z-index: 10; }
         #globe-container { opacity: 0; pointer-events: none; z-index: 5; }
+        #cy-container { z-index: 10; background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); }
 
-        /* --- 4. HUD SYSTEM (TOP BAR) --- */
-        .hud-top {
-            position: absolute; top: 0; left: 0; width: 100%; height: 50px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0));
+        /* HUD */
+        .hud {
+            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
             display: flex; justify-content: space-between; align-items: center; padding: 0 20px;
-            z-index: var(--z-hud); border-bottom: 1px solid var(--border-dim);
+            z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-
-        .brand-logo { font-weight: 800; font-size: 14px; letter-spacing: 2px; display: flex; align-items: center; gap: 10px; }
-        .brand-logo i { color: var(--accent-primary); }
-
-        .toolbar { display: flex; gap: 4px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 6px; border: 1px solid var(--border-dim); }
+        .controls { display: flex; gap: 10px; }
+        .btn {
+            background: rgba(255,255,255,0.05); border: 1px solid #444; color: #aaa;
+            padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;
+            display: flex; align-items: center; gap: 8px; transition: 0.2s; text-transform: uppercase;
+        }
+        .btn:hover, .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 15px rgba(59,130,246,0.4); }
         
-        .btn-tool {
-            background: transparent; border: none; color: #94a3b8; padding: 6px 12px;
-            font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 4px;
-            display: flex; align-items: center; gap: 6px; transition: 0.2s; text-transform: uppercase;
+        /* SIDEBAR */
+        #sidebar {
+            position: absolute; top: 70px; right: 20px; bottom: 20px; width: 300px;
+            background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+            transform: translateX(350px); transition: transform 0.3s; z-index: 50;
+            backdrop-filter: blur(10px); display: flex; flex-direction: column;
         }
-        .btn-tool:hover { color: #fff; background: rgba(255,255,255,0.1); }
-        .btn-tool.active { background: var(--accent-primary); color: #000; box-shadow: 0 0 10px var(--accent-primary); }
-        .btn-icon { width: 30px; justify-content: center; padding: 6px 0; }
-
-        /* --- 5. SIDEBAR (COMPLEX) --- */
-        #sidebar-right {
-            position: absolute; top: 60px; right: -400px; bottom: 80px; width: 380px;
-            background: var(--panel-glass); border-left: 1px solid var(--border-dim);
-            backdrop-filter: blur(12px); z-index: var(--z-panel);
-            transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            display: flex; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-        }
-        #sidebar-right.active { right: 0; }
-
-        .sb-tabs { display: flex; border-bottom: 1px solid var(--border-dim); }
-        .sb-tab { flex: 1; padding: 12px; background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 11px; font-weight: bold; border-bottom: 2px solid transparent; transition: 0.3s; }
-        .sb-tab.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); background: rgba(14, 165, 233, 0.05); }
-
-        .sb-content { flex: 1; overflow-y: auto; padding: 20px; }
-        .sb-section { margin-bottom: 20px; }
-        .sb-label { font-size: 10px; color: #64748b; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; letter-spacing: 1px; }
-        .sb-value { font-size: 13px; color: #fff; font-family: var(--font-mono); border-bottom: 1px solid var(--border-dim); padding-bottom: 5px; }
-
-        /* --- 6. TIMELINE PLAYER (BOTTOM) --- */
-        .timeline-bar {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 60px;
-            background: var(--panel-glass); border-top: 1px solid var(--border-dim);
-            z-index: var(--z-hud); display: flex; align-items: center; padding: 0 20px; gap: 15px;
-        }
-        .play-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--accent-primary); background: transparent; color: var(--accent-primary); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
-        .play-btn:hover { background: var(--accent-primary); color: #000; box-shadow: 0 0 15px var(--accent-primary); }
+        #sidebar.active { transform: translateX(0); }
+        .sb-head { padding: 15px; border-bottom: 1px solid var(--border); font-weight: bold; }
+        .sb-body { padding: 15px; overflow-y: auto; flex: 1; }
         
-        .scrubber-track { flex: 1; height: 4px; background: #333; border-radius: 2px; position: relative; cursor: pointer; }
-        .scrubber-fill { height: 100%; background: var(--accent-primary); width: 30%; position: relative; }
-        .scrubber-thumb { position: absolute; right: -6px; top: -4px; width: 12px; height: 12px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
-
-        /* --- 7. NOTIFICATIONS --- */
-        #toast-container { position: absolute; top: 60px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .toast { 
-            background: rgba(0, 0, 0, 0.8); border: 1px solid var(--border-dim); border-left: 3px solid var(--accent-primary);
-            padding: 12px 20px; border-radius: 4px; color: #fff; font-size: 12px; min-width: 250px;
-            animation: slideIn 0.3s forwards; pointer-events: auto; backdrop-filter: blur(5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        /* TOAST NOTIFICATION */
+        #toast {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: #10b981; color: #fff; padding: 10px 20px; border-radius: 20px;
+            font-size: 12px; font-weight: bold; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 200;
         }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* UTILS */
-        .hidden-el { display: none; }
-        .tag { padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; text-transform: uppercase; }
-        .tag-red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
-        .tag-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
-        .tag-blue { background: rgba(14, 165, 233, 0.2); color: #7dd3fc; }
-
+        /* HIDDEN INPUT */
+        #file-input { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="boot-screen">
-        <div class="boot-log" id="boot-log">
-            > INITIALIZING KERNEL...<br>
-            > LOADING ONTOLOGY ENGINE v4.2<br>
-            > CONNECTING TO SATELLITE FEED...<br>
+    <div id="toast"><i class="fas fa-check"></i> System Updated</div>
+
+    <div class="hud">
+        <div style="font-weight:900; letter-spacing:2px; display:flex; gap:10px; align-items:center;">
+            <i class="fas fa-cube" style="color:var(--accent)"></i> FOUNDRY X <span style="font-size:10px; color:#666; font-weight:normal;">| ISO-ENGINE v4</span>
         </div>
-        <div class="progress-bar"><div class="progress-fill" id="boot-fill"></div></div>
-        <div style="margin-top: 10px; font-size: 10px; color: #666;">ENCRYPTED CONNECTION ESTABLISHED</div>
-    </div>
-
-    <div id="toast-container"></div>
-
-    <div class="hud-top">
-        <div class="brand-logo">
-            <i class="fas fa-cube"></i> FOUNDRY<span>X</span> <span style="font-size:10px; color:#666; margin-left:5px;">| ENT. EDITION</span>
+        
+        <div class="controls">
+            <button class="btn active" onclick="switchView('network', this)"><i class="fas fa-share-alt"></i> Network</button>
+            <button class="btn" onclick="switchView('globe', this)"><i class="fas fa-globe"></i> 3D Globe</button>
+            <button class="btn" onclick="switchView('layers', this)"><i class="fas fa-layer-group"></i> Iso-Layers</button>
         </div>
 
-        <div class="toolbar">
-            <button class="btn-tool active" onclick="switchView('network')" title="Network Graph"><i class="fas fa-share-alt"></i> Network</button>
-            <button class="btn-tool" onclick="switchView('globe')" title="Geospatial"><i class="fas fa-globe"></i> Geo-Spatial</button>
-            <button class="btn-tool" onclick="switchView('layers')" title="Architecture"><i class="fas fa-layer-group"></i> Layers</button>
-        </div>
-
-        <div class="toolbar">
-            <label for="file-upload" class="btn-tool"><i class="fas fa-folder-open"></i> Import</label>
-            <input type="file" id="file-upload" class="hidden-el" accept=".xlsx, .xls">
-            <button class="btn-tool" onclick="reloadSystem()"><i class="fas fa-sync-alt"></i> Reload</button>
-            <button class="btn-tool btn-icon" onclick="toggleSettings()"><i class="fas fa-cog"></i></button>
+        <div class="controls">
+            <label for="file-input" class="btn"><i class="fas fa-upload"></i> Import Excel</label>
+            <input type="file" id="file-input" accept=".xlsx, .xls">
+            <button class="btn" onclick="loadDemo()"><i class="fas fa-sync"></i> Demo</button>
         </div>
     </div>
 
@@ -164,101 +90,24 @@
         <div id="globe-container"></div>
     </div>
 
-    <div id="sidebar-right">
-        <div class="sb-tabs">
-            <button class="sb-tab active" onclick="setTab('props')">PROPERTIES</button>
-            <button class="sb-tab" onclick="setTab('analytics')">ANALYTICS</button>
-            <button class="sb-tab" onclick="setTab('logs')">LOGS</button>
-        </div>
-
-        <div class="sb-content" id="sb-props">
-            <div style="text-align:center; margin-top:50px; color:#666;">
-                <i class="fas fa-mouse-pointer" style="font-size:24px; margin-bottom:10px;"></i><br>
-                SELECT AN OBJECT
-            </div>
-        </div>
-
-        <div class="sb-content hidden-el" id="sb-analytics">
-            <canvas id="mainChart" height="200"></canvas>
-            <div style="margin-top:20px;">
-                <div class="sb-label">Throughput Efficiency</div>
-                <div class="progress-bar" style="width:100%; background:#333; margin-top:5px;">
-                    <div style="width:75%; height:100%; background:var(--accent-success);"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="sb-content hidden-el" id="sb-logs">
-            <div style="font-family: var(--font-mono); font-size:11px; color:#aaa; line-height:1.6;">
-                <span style="color:#666;">[14:02:11]</span> NODE_INIT_OK<br>
-                <span style="color:#666;">[14:02:15]</span> DATA_SYNC_COMPLETE<br>
-                <span style="color:var(--accent-warning);">[14:03:00]</span> LATENCY_DETECTED (45ms)<br>
-            </div>
-        </div>
-    </div>
-
-    <div class="timeline-bar">
-        <button class="play-btn" onclick="togglePlay()"><i class="fas fa-play"></i></button>
-        <div style="font-size:12px; font-family:var(--font-mono); color:var(--accent-primary);">LIVE FEED</div>
-        <div class="scrubber-track">
-            <div class="scrubber-fill">
-                <div class="scrubber-thumb"></div>
-            </div>
-        </div>
-        <div style="font-size:11px; color:#666;">OCT 2025</div>
+    <div id="sidebar">
+        <div class="sb-head">NODE DETAILS</div>
+        <div class="sb-body" id="sb-content">Select a node...</div>
     </div>
 
     <script>
-        /* --- SYSTEM CORE --- */
-        const AppState = {
-            view: 'network', // network, globe, layers
-            selectedNode: null,
-            isPlaying: false,
-            data: { nodes: [], edges: [] }
+        // --- CONFIG ---
+        let cy, globe;
+        let appData = { nodes: [], edges: [] };
+        const COLORS = { supplier: '#ef4444', factory: '#3b82f6', warehouse: '#f59e0b', store: '#10b981', default: '#94a3b8' };
+
+        // --- 1. INITIALIZE ---
+        window.onload = () => {
+            initCy();
+            loadDemo(); // Load fake data first
         };
 
-        const Colors = {
-            supplier: '#ef4444', factory: '#0ea5e9', warehouse: '#f59e0b', store: '#10b981', default: '#94a3b8'
-        };
-
-        // --- 1. BOOT SEQUENCE ---
-        window.onload = function() {
-            let progress = 0;
-            const fill = document.getElementById('boot-fill');
-            const log = document.getElementById('boot-log');
-            const screen = document.getElementById('boot-screen');
-            
-            const logs = [
-                "> LOADING ASSETS...", "> DECRYPTING KEYS...", "> MOUNTING VOLUMES...", 
-                "> ESTABLISHING UPLINK...", "> SYSTEM READY."
-            ];
-
-            const interval = setInterval(() => {
-                progress += Math.random() * 20;
-                if(progress > 100) progress = 100;
-                fill.style.width = progress + '%';
-                
-                if(Math.random() > 0.7 && logs.length > 0) {
-                    log.innerHTML += logs.shift() + "<br>";
-                    log.scrollTop = log.scrollHeight;
-                }
-
-                if(progress === 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        screen.classList.add('hidden');
-                        initSystem();
-                    }, 500);
-                }
-            }, 100);
-        };
-
-        // --- 2. CYTOSCAPE ENGINE (2D) ---
-        let cy;
-        function initSystem() {
-            showToast("System Online", "success");
-            generateMockData();
-            
+        function initCy() {
             cy = cytoscape({
                 container: document.getElementById('cy-container'),
                 style: [
@@ -266,225 +115,230 @@
                         selector: 'node',
                         style: {
                             'label': 'data(label)', 'color': '#fff', 'font-size': '10px',
-                            'background-color': '#1f2937', 'border-width': 2, 
-                            'border-color': ele => Colors[ele.data('type')] || '#555',
+                            'background-color': '#1a1a1a', 'border-width': 2,
+                            'border-color': ele => COLORS[ele.data('type')] || '#555',
                             'width': 40, 'height': 40, 'text-valign': 'bottom', 'text-margin-y': 5
                         }
                     },
                     {
                         selector: 'edge',
-                        style: { 'width': 1, 'line-color': '#374151', 'target-arrow-color': '#374151', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' }
+                        style: { 'width': 1, 'line-color': '#444', 'target-arrow-color': '#444', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' }
                     },
+                    // ISOMETRIC STYLE (ทำให้ดูเหมือนแผ่นป้าย)
                     {
-                        selector: ':selected',
-                        style: { 'border-width': 4, 'border-color': '#fff', 'shadow-blur': 20, 'shadow-color': '#fff' }
+                        selector: '.iso-node',
+                        style: {
+                            'shape': 'round-rectangle', 'width': 80, 'height': 50,
+                            'font-size': '8px', 'text-valign': 'center', 'text-halign': 'center',
+                            'background-opacity': 0.8, 'shadow-blur': 10, 'shadow-offset-y': 10, 'shadow-color': '#000'
+                        }
                     }
-                ],
-                elements: AppState.data
+                ]
             });
 
-            cy.layout({ name: 'cose', animate: false }).run();
-
             cy.on('tap', 'node', evt => openSidebar(evt.target.data()));
-            cy.on('tap', evt => { if(evt.target === cy) closeSidebar(); });
+            cy.on('tap', evt => { if(evt.target === cy) document.getElementById('sidebar').classList.remove('active'); });
         }
 
-        // --- 3. GLOBE ENGINE (3D) ---
-        let globe;
-        function initGlobe() {
-            if(globe) return;
+        // --- 2. ISOMETRIC LAYOUT ENGINE (สูตรลับ Fake 3D) ---
+        function runIsometricLayout() {
+            cy.elements().addClass('iso-node'); // เปลี่ยน Style เป็นแผ่นป้าย
+
+            // แยก Node ตามประเภท (เพื่อวางคนละชั้น)
+            const layers = {
+                'supplier': { nodes: [], yBase: 600 },  // ชั้นล่าง
+                'factory':  { nodes: [], yBase: 300 },  // ชั้นกลาง
+                'default':  { nodes: [], yBase: 0 }     // ชั้นบน (Store/Warehouse)
+            };
+
+            // จัดกลุ่ม Nodes
+            cy.nodes().forEach(node => {
+                let type = node.data('type');
+                if (!layers[type]) type = 'default';
+                layers[type].nodes.push(node);
+            });
+
+            // คำนวณตำแหน่ง Isometric (x = isoX, y = isoY)
+            // สูตร: ScreenX = (gridX - gridY) * width
+            // สูตร: ScreenY = (gridX + gridY) * height - layerOffset
             
-            // Transform data for Globe
-            const gNodes = AppState.data.nodes.map(n => ({
-                id: n.data.id,
-                name: n.data.label,
-                type: n.data.type,
-                lat: (Math.random() * 160) - 80,
-                lng: (Math.random() * 360) - 180,
-                val: 1,
-                color: Colors[n.data.type] || '#fff'
-            }));
+            cy.batch(() => {
+                Object.keys(layers).forEach(key => {
+                    const layer = layers[key];
+                    const count = layer.nodes.length;
+                    const cols = Math.ceil(Math.sqrt(count));
+                    
+                    layer.nodes.forEach((node, index) => {
+                        const row = Math.floor(index / cols);
+                        const col = index % cols;
+                        
+                        // Isometric Transformation
+                        const isoX = (col - row) * 80; 
+                        const isoY = (col + row) * 40 + layer.yBase;
 
-            const gArcs = AppState.data.edges.map(e => {
-                const src = gNodes.find(n => n.id === e.data.source);
-                const tgt = gNodes.find(n => n.id === e.data.target);
-                return src && tgt ? { startLat: src.lat, startLng: src.lng, endLat: tgt.lat, endLng: tgt.lng, color: [src.color, tgt.color] } : null;
-            }).filter(x => x);
-
-            globe = Globe()
-                (document.getElementById('globe-container'))
-                .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
-                .pointsData(gNodes)
-                .pointColor('color')
-                .pointAltitude(0.05)
-                .pointRadius(0.5)
-                .arcsData(gArcs)
-                .arcColor('color')
-                .arcDashLength(0.4)
-                .arcDashGap(2)
-                .arcDashAnimateTime(1500)
-                .hexBinPointsData(gNodes) // Add Hexagon Layer
-                .hexBinPointWeight(5)
-                .hexBinResolution(4)
-                .hexTopColor(d => '#0ea5e9')
-                .hexSideColor(d => 'rgba(14, 165, 233, 0.2)')
-                .hexBinMerge(true)
-                .enablePointerInteraction(true)
-                .onPointClick(node => {
-                    openSidebar({ label: node.name, type: node.type, details: `Coordinates: ${node.lat.toFixed(2)}, ${node.lng.toFixed(2)}` });
+                        node.position({ x: isoX + 500, y: isoY }); // +500 เพื่อให้อยู่กลางจอ
+                    });
                 });
+            });
+
+            cy.fit();
         }
 
-        // --- 4. VIEW MANAGER ---
-        function switchView(mode) {
-            AppState.view = mode;
-            
-            // UI Toggle
-            document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+        // --- 3. VIEW SWITCHER ---
+        function switchView(mode, btn) {
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
 
             const cyDiv = document.getElementById('cy-container');
             const globeDiv = document.getElementById('globe-container');
 
-            if(mode === 'globe') {
+            if (mode === 'globe') {
                 cyDiv.style.opacity = 0; cyDiv.style.pointerEvents = 'none';
                 globeDiv.style.opacity = 1; globeDiv.style.pointerEvents = 'auto';
-                initGlobe();
+                initGlobe(); // Create Globe if not exists
             } else {
                 cyDiv.style.opacity = 1; cyDiv.style.pointerEvents = 'auto';
                 globeDiv.style.opacity = 0; globeDiv.style.pointerEvents = 'none';
+
+                cy.elements().removeClass('iso-node');
                 
-                if(mode === 'layers') {
-                    // Isometric Layer View
-                    cy.layout({ name: 'breadthfirst', directed: true, spacingFactor: 1.5, animate: true }).run();
+                if (mode === 'layers') {
+                    runIsometricLayout(); // เรียกใช้สูตร Iso ใหม่
                 } else {
-                    // Network View
+                    // Normal Network
                     cy.layout({ name: 'cose', animate: true }).run();
                 }
             }
         }
 
-        // --- 5. SIDEBAR & UI LOGIC ---
-        function openSidebar(data) {
-            const sb = document.getElementById('sidebar-right');
-            sb.classList.add('active');
-            
-            // Build Content
-            const typeColor = Colors[data.type] || Colors.default;
-            const badge = `<span class="tag" style="background:${typeColor}33; color:${typeColor}">${(data.type||'Unknown').toUpperCase()}</span>`;
-            
-            let html = `
-                <div class="sb-section">
-                    <h2 style="margin:0; font-size:18px; color:#fff;">${data.label}</h2>
-                    <div style="margin-top:5px;">${badge} <span class="tag tag-green">ONLINE</span></div>
-                </div>
-                
-                <div class="sb-section">
-                    <div class="sb-label">METADATA</div>
-                    <div class="sb-value">ID: ${data.id || 'N/A'}</div>
-                    <div class="sb-value">REGION: APAC-01</div>
-                    <div class="sb-value">LAST SYNC: 2ms ago</div>
-                </div>
-            `;
-            
-            if(data.details) {
-                html += `<div class="sb-section"><div class="sb-label">ATTRIBUTES</div><div style="font-size:12px; line-height:1.6; color:#ccc;">${data.details.replace('|','<br>')}</div></div>`;
-            }
-
-            document.getElementById('sb-props').innerHTML = html;
-            
-            // Update Chart
-            updateChart();
-        }
-
-        function closeSidebar() {
-            document.getElementById('sidebar-right').classList.remove('active');
-        }
-
-        function setTab(tabId) {
-            document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.sb-content').forEach(c => c.classList.add('hidden-el'));
-            
-            event.currentTarget.classList.add('active');
-            document.getElementById('sb-' + tabId).classList.remove('hidden-el');
-        }
-
-        // --- 6. UTILITIES (TOAST, MOCK DATA) ---
-        function showToast(msg, type='info') {
-            const container = document.getElementById('toast-container');
-            const el = document.createElement('div');
-            el.className = 'toast';
-            el.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-info-circle'}"></i> ${msg}`;
-            el.style.borderLeftColor = type==='success'?'#10b981':'#0ea5e9';
-            container.appendChild(el);
-            setTimeout(() => el.remove(), 4000);
-        }
-
-        function generateMockData() {
-            const nodes = [];
-            const edges = [];
-            
-            // Generate Nodes
-            for(let i=1; i<=5; i++) nodes.push({ group:'nodes', data: { id: `sup${i}`, label: `Supplier ${i}`, type: 'supplier', details: "Reliability: 98%|Lead Time: 5 Days" } });
-            for(let i=1; i<=3; i++) nodes.push({ group:'nodes', data: { id: `fac${i}`, label: `Factory ${i}`, type: 'factory', details: "Capacity: 85%|Output: 2000 Units" } });
-            for(let i=1; i<=10; i++) nodes.push({ group:'nodes', data: { id: `st${i}`, label: `Store ${i}`, type: 'store', details: "Stock: OK|Sales: High" } });
-
-            // Generate Edges
-            nodes.forEach(n => {
-                if(n.data.type === 'supplier') edges.push({ group:'edges', data: { source: n.data.id, target: `fac${Math.ceil(Math.random()*3)}` } });
-                if(n.data.type === 'factory') edges.push({ group:'edges', data: { source: n.data.id, target: `st${Math.ceil(Math.random()*10)}` } });
-            });
-
-            AppState.data = { nodes, edges };
-        }
-
-        function togglePlay() {
-            AppState.isPlaying = !AppState.isPlaying;
-            const btn = document.querySelector('.play-btn i');
-            btn.className = AppState.isPlaying ? 'fas fa-pause' : 'fas fa-play';
-            showToast(AppState.isPlaying ? "Simulation Started" : "Simulation Paused");
-        }
-
-        function reloadSystem() {
-            generateMockData();
-            cy.elements().remove();
-            cy.add(AppState.data);
-            cy.layout({ name: 'cose', animate: true }).run();
-            showToast("Data Reloaded", "success");
-        }
-
-        let mainChart;
-        function updateChart() {
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            if(mainChart) mainChart.destroy();
-            mainChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['10:00','11:00','12:00','13:00','14:00'],
-                    datasets: [{
-                        label: 'Metric',
-                        data: [12, 19, 3, 5, 2],
-                        borderColor: '#0ea5e9',
-                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    plugins: { legend: { display: false } },
-                    scales: { x: { display: false }, y: { display: false } }
-                }
-            });
-        }
-        
-        // Excel Import Logic (Hidden Input)
-        document.getElementById('file-upload').addEventListener('change', (e) => {
+        // --- 4. UPLOAD LOGIC (FIXED!) ---
+        document.getElementById('file-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if(!file) return;
-            // (Simple XLSX parse logic same as before can be added here)
-            showToast("File Uploaded (Demo Mode)", "success");
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                
+                // อ่านข้อมูล (รองรับทั้ง Sheet 'Nodes' หรือ Sheet แรก)
+                const nodeSheet = workbook.Sheets['Nodes'] || workbook.Sheets[workbook.SheetNames[0]];
+                const edgeSheet = workbook.Sheets['Edges'] || workbook.Sheets[workbook.SheetNames[1]];
+                
+                const rawNodes = XLSX.utils.sheet_to_json(nodeSheet);
+                const rawEdges = edgeSheet ? XLSX.utils.sheet_to_json(edgeSheet) : [];
+
+                // แปลงข้อมูล
+                const nodes = rawNodes.map(n => ({
+                    group: 'nodes',
+                    data: { id: n.id.toString(), label: n.label, type: (n.type||'default').toLowerCase(), details: n.details }
+                }));
+                const edges = rawEdges.map(e => ({
+                    group: 'edges',
+                    data: { source: e.source.toString(), target: e.target.toString() }
+                }));
+
+                // อัพเดทระบบ
+                appData = { nodes, edges };
+                updateSystem();
+                showToast("File Loaded Successfully!");
+            };
+            reader.readAsArrayBuffer(file);
         });
 
+        function updateSystem() {
+            cy.elements().remove();
+            cy.add([...appData.nodes, ...appData.edges]);
+            
+            // ถ้าอยู่ในโหมดไหน ให้จัด Layout โหมดนั้นใหม่
+            if (document.querySelector('.btn.active').innerText.includes('Layers')) {
+                runIsometricLayout();
+            } else if (document.querySelector('.btn.active').innerText.includes('Network')) {
+                cy.layout({ name: 'cose', animate: true }).run();
+            } else {
+                // Globe mode: reset globe logic
+                document.getElementById('globe-container').innerHTML = ''; // Clear old globe
+                globe = null;
+                initGlobe();
+            }
+        }
+
+        // --- 5. GLOBE LOGIC ---
+        function initGlobe() {
+            if (globe) return;
+            
+            const gNodes = appData.nodes.map(n => ({
+                id: n.data.id,
+                name: n.data.label,
+                type: n.data.type,
+                color: COLORS[n.data.type] || '#fff',
+                lat: (Math.random() * 160) - 80,
+                lng: (Math.random() * 360) - 180,
+                val: 1
+            }));
+            
+            const gEdges = appData.edges.map(e => {
+                const src = gNodes.find(n => n.id == e.data.source);
+                const tgt = gNodes.find(n => n.id == e.data.target);
+                return src && tgt ? { startLat: src.lat, startLng: src.lng, endLat: tgt.lat, endLng: tgt.lng, color: [src.color, tgt.color] } : null;
+            }).filter(x => x);
+
+            globe = Globe()
+                (document.getElementById('globe-container'))
+                .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+                .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+                .pointsData(gNodes)
+                .pointColor('color')
+                .pointAltitude(0.1)
+                .pointRadius(0.5)
+                .arcsData(gEdges)
+                .arcColor('color')
+                .arcDashLength(0.5)
+                .arcDashGap(2)
+                .arcDashAnimateTime(2000)
+                .onPointClick(node => openSidebar({ label: node.name, type: node.type, details: `Lat: ${node.lat.toFixed(2)}` }));
+        }
+
+        // --- 6. UTILS ---
+        function loadDemo() {
+            const nodes = [];
+            const edges = [];
+            // Generate Suppliers
+            for(let i=1;i<=6;i++) nodes.push({group:'nodes', data:{id:`s${i}`, label:`Supplier ${i}`, type:'supplier'}});
+            // Generate Factories
+            for(let i=1;i<=3;i++) nodes.push({group:'nodes', data:{id:`f${i}`, label:`Factory ${i}`, type:'factory'}});
+            // Generate Stores
+            for(let i=1;i<=12;i++) nodes.push({group:'nodes', data:{id:`st${i}`, label:`Store ${i}`, type:'store'}});
+
+            // Connect
+            nodes.forEach(n => {
+                if(n.data.type==='supplier') edges.push({group:'edges', data:{source:n.data.id, target:`f${Math.ceil(Math.random()*3)}`}});
+                if(n.data.type==='factory') edges.push({group:'edges', data:{source:n.data.id, target:`st${Math.ceil(Math.random()*12)}`}});
+            });
+
+            appData = { nodes, edges };
+            updateSystem();
+        }
+
+        function openSidebar(data) {
+            const sb = document.getElementById('sidebar');
+            sb.classList.add('active');
+            const color = COLORS[data.type] || '#fff';
+            document.getElementById('sb-content').innerHTML = `
+                <h2 style="color:${color}; margin-top:0;">${data.label}</h2>
+                <div style="font-size:11px; color:#aaa; margin-bottom:10px;">TYPE: ${(data.type||'').toUpperCase()}</div>
+                <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:4px; font-size:12px;">
+                    ${data.details || 'System Active. No alerts.'}
+                </div>
+            `;
+        }
+        
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+            t.style.opacity = 1;
+            setTimeout(() => t.style.opacity = 0, 3000);
+        }
     </script>
 </body>
 </html>
