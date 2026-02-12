@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FOUNDRY V7 // FINAL STABLE</title>
+    <title>FOUNDRY V8 // ENTERPRISE ONTOLOGY SYSTEM</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script src="https://unpkg.com/globe.gl"></script>
@@ -10,274 +10,1874 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape-dagre/2.5.0/cytoscape-dagre.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        :root { --bg: #050505; --panel: #111; --accent: #00f3ff; --text: #eee; }
-        * { box-sizing: border-box; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
+        :root { 
+            --bg: #000000; 
+            --panel: #0a0a0a; 
+            --accent: #00ff88; 
+            --accent2: #00ff88;
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --danger: #ff3366;
+            --text: #e5e7eb; 
+            --border: #1a1a1a;
+            --shadow: rgba(0,255,136,0.3);
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            overflow: hidden; 
+            height: 100vh; 
+            width: 100vw; 
+        }
 
-        /* HEADER */
-        #toolbar {
-            position: absolute; top: 0; left: 0; width: 100%; height: 50px;
-            background: rgba(20,20,20,0.95); border-bottom: 1px solid #333; z-index: 100;
-            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+        /* === HEADER === */
+        #header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+            border-bottom: 2px solid var(--accent);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            justify-content: space-between;
         }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
         .btn {
-            background: #222; border: 1px solid #444; color: #aaa; padding: 5px 12px;
-            cursor: pointer; font-size: 11px; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            font-weight: 500;
         }
-        .btn:hover, .btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+        
+        .btn:hover { 
+            background: var(--accent); 
+            color: #000; 
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+        
+        .btn.active { 
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff; 
+            border-color: transparent;
+            box-shadow: 0 4px 16px var(--shadow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            border: none;
+            color: #fff;
+        }
+
         input[type="file"] { display: none; }
 
-        /* VIEWPORT - แก้ปัญหา Canvas ล้น/ขาด */
+        /* === LEFT SIDEBAR === */
+        #leftSidebar {
+            position: fixed;
+            left: 0;
+            top: 60px;
+            width: 320px;
+            height: calc(100vh - 60px);
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+            z-index: 900;
+            transform: translateX(0);
+            transition: transform 0.3s;
+        }
+
+        #leftSidebar.collapsed {
+            transform: translateX(-320px);
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ontology-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .ontology-item:hover {
+            background: rgba(0,255,136,0.1);
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        .ontology-item.active {
+            background: linear-gradient(135deg, rgba(0,255,136,0.2), rgba(0,0,0,0.3));
+            border-color: var(--accent);
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card h4 {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* === VIEWPORT === */
         #viewport {
-            position: absolute; top: 50px; left: 0; width: 100vw; height: calc(100vh - 50px);
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            position: fixed;
+            top: 60px;
+            left: 320px;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, #0a0a0a 0%, #000000 100%);
+            transition: left 0.3s;
         }
-        #cy { width: 100%; height: 100%; display: block; }
-        #globe-viz { position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; pointer-events:none; transition: opacity 0.3s; }
 
-        /* SIDEBAR */
-        #sidebar {
-            position: absolute; right: 20px; top: 70px; width: 280px; 
-            background: rgba(15,15,20,0.95); border: 1px solid #333; border-radius: 8px;
-            padding: 15px; transform: translateX(320px); transition: 0.3s; z-index: 200;
+        #viewport.fullwidth {
+            left: 0;
         }
-        #sidebar.active { transform: translateX(0); }
 
-        /* LOADER */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8);
-            z-index: 999; display: flex; justify-content: center; align-items: center; color: var(--accent);
+        #cy { 
+            width: 100%; 
+            height: 100%; 
+            display: block; 
+        }
+
+        #globe-viz { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.3s; 
+        }
+
+        /* === RIGHT PANEL === */
+        #rightPanel {
+            position: fixed;
+            right: 0;
+            top: 60px;
+            width: 400px;
+            height: calc(100vh - 60px);
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            transform: translateX(420px);
+            transition: transform 0.3s;
+            z-index: 950;
+            overflow-y: auto;
+        }
+
+        #rightPanel.active {
+            transform: translateX(0);
+            box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+        }
+
+        .panel-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(0,255,136,0.05), rgba(0,0,0,0.3));
+        }
+
+        .panel-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            font-size: 24px;
+            color: #9ca3af;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: var(--danger);
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        .property-group {
+            margin-bottom: 20px;
+        }
+
+        .property-group label {
+            display: block;
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .property-group input,
+        .property-group select,
+        .property-group textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .property-group input:focus,
+        .property-group select:focus,
+        .property-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0,217,255,0.1);
+        }
+
+        /* === SEARCH BAR === */
+        #searchBar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            z-index: 800;
+        }
+
+        #searchInput {
+            width: 100%;
+            background: rgba(10,10,10,0.95);
+            border: 2px solid var(--border);
+            border-radius: 24px;
+            padding: 12px 50px 12px 20px;
+            color: var(--text);
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        #searchResults {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(10,10,10,0.98);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-top: 8px;
+            max-height: 400px;
+            overflow-y: auto;
             display: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: rgba(0,255,136,0.1);
+        }
+
+        /* === BOTTOM PANEL === */
+        #bottomPanel {
+            position: fixed;
+            bottom: 0;
+            left: 320px;
+            right: 0;
+            height: 250px;
+            background: var(--panel);
+            border-top: 1px solid var(--border);
+            transform: translateY(260px);
+            transition: transform 0.3s;
+            z-index: 850;
+            transition: left 0.3s, transform 0.3s;
+        }
+
+        #bottomPanel.fullwidth {
+            left: 0;
+        }
+
+        #bottomPanel.active {
+            transform: translateY(0);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .tab.active {
+            border-bottom-color: var(--accent);
+            color: var(--accent);
+            background: rgba(0,255,136,0.1);
+        }
+
+        .tab-content {
+            padding: 20px;
+            height: calc(250px - 45px);
+            overflow-y: auto;
+        }
+
+        /* === MODAL === */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        /* === LOADER === */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* === TOOLTIPS === */
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 10000;
+            display: none;
+        }
+
+        /* === CONTEXT MENU === */
+        #contextMenu {
+            position: absolute;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            min-width: 180px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            z-index: 10000;
+            display: none;
+            overflow: hidden;
+        }
+
+        .context-menu-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .context-menu-item:hover {
+            background: rgba(0,255,136,0.1);
+            color: var(--accent);
+        }
+
+        .context-menu-item i {
+            width: 16px;
+        }
+
+        /* === BADGES === */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success { background: var(--success); color: #fff; }
+        .badge-warning { background: var(--warning); color: #000; }
+        .badge-danger { background: var(--danger); color: #fff; }
+        .badge-info { background: var(--accent); color: #000; }
+
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        /* === RELATIONSHIP TYPES === */
+        .rel-type-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .rel-type-btn {
+            padding: 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .rel-type-btn:hover {
+            background: rgba(0,255,136,0.1);
+            border-color: var(--accent);
+        }
+
+        .rel-type-btn.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        /* === ANALYTICS CHART === */
+        #analyticsChart {
+            height: 180px;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
 
-    <div id="loader"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="loader-spinner"></div>
+        <div style="color: var(--accent); font-size: 14px; font-weight: 500;">Loading Ontology...</div>
+    </div>
 
-    <div id="toolbar">
-        <div style="font-weight:bold; letter-spacing:1px;"><i class="fas fa-network-wired"></i> FOUNDRY V7</div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn active" onclick="setMode('network')">Network</button>
-            <button class="btn" onclick="setMode('layers')">Layers</button>
-            <button class="btn" onclick="setMode('globe')">Globe</button>
+    <!-- HEADER -->
+    <div id="header">
+        <div class="logo">
+            <i class="fas fa-project-diagram"></i>
+            FOUNDRY V8
+            <span style="font-size: 12px; color: #9ca3af; font-weight: 400;">Enterprise Ontology</span>
         </div>
-        <div style="display:flex; gap:10px;">
-            <label for="fileInput" class="btn" style="border-color:var(--accent); color:var(--accent);">
-                <i class="fas fa-upload"></i> Import Excel
+
+        <div class="nav-group">
+            <button class="btn active" onclick="setMode('network')">
+                <i class="fas fa-network-wired"></i> Network
+            </button>
+            <button class="btn" onclick="setMode('layers')">
+                <i class="fas fa-layer-group"></i> Hierarchy
+            </button>
+            <button class="btn" onclick="setMode('globe')">
+                <i class="fas fa-globe"></i> Globe
+            </button>
+        </div>
+
+        <div class="nav-group">
+            <button class="btn" onclick="toggleLeftSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <label for="fileInput" class="btn btn-primary">
+                <i class="fas fa-file-import"></i> Import
             </label>
-            <input type="file" id="fileInput" accept=".xlsx, .xls">
-            <button class="btn" onclick="loadDemo()">Demo Data</button>
+            <input type="file" id="fileInput" accept=".xlsx, .xls, .json, .owl, .rdf">
+            <button class="btn" onclick="exportOntology()">
+                <i class="fas fa-file-export"></i> Export
+            </button>
+            <button class="btn" onclick="showQueryBuilder()">
+                <i class="fas fa-search"></i> Query
+            </button>
+            <button class="btn" onclick="toggleAnalytics()">
+                <i class="fas fa-chart-line"></i> Analytics
+            </button>
         </div>
     </div>
 
+    <!-- LEFT SIDEBAR -->
+    <div id="leftSidebar">
+        <div class="sidebar-section">
+            <h3>Ontologies</h3>
+            <div id="ontologyList">
+                <div class="ontology-item active" data-id="default">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">Default Ontology</div>
+                            <div style="font-size: 11px; color: #9ca3af;">Active</div>
+                        </div>
+                        <span class="badge badge-success">v1.0</span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn" style="width: 100%; margin-top: 12px;" onclick="createNewOntology()">
+                <i class="fas fa-plus"></i> New Ontology
+            </button>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Statistics</h3>
+            <div class="stat-card">
+                <h4>Total Entities</h4>
+                <div class="value" id="statEntities">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Relationships</h4>
+                <div class="value" id="statRelations">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Depth Levels</h4>
+                <div class="value" id="statDepth">0</div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Quick Actions</h3>
+            <button class="btn" style="width: 100%; margin-bottom: 8px;" onclick="addEntity()">
+                <i class="fas fa-plus-circle"></i> Add Entity
+            </button>
+            <button class="btn" style="width: 100%; margin-bottom: 8px;" onclick="addRelationship()">
+                <i class="fas fa-link"></i> Add Relationship
+            </button>
+            <button class="btn" style="width: 100%; margin-bottom: 8px;" onclick="validateOntology()">
+                <i class="fas fa-check-circle"></i> Validate
+            </button>
+            <button class="btn btn-danger" style="width: 100%;" onclick="clearOntology()">
+                <i class="fas fa-trash"></i> Clear All
+            </button>
+        </div>
+    </div>
+
+    <!-- VIEWPORT -->
     <div id="viewport">
+        <!-- Search Bar -->
+        <div id="searchBar">
+            <input type="text" id="searchInput" placeholder="Search entities, relationships, properties..." />
+            <div id="searchResults"></div>
+        </div>
+
         <div id="cy"></div>
         <div id="globe-viz"></div>
     </div>
 
-    <div id="sidebar">
-        <div style="display:flex; justify-content:space-between;">
-            <b id="sb-title">DETAILS</b>
-            <span style="cursor:pointer;" onclick="document.getElementById('sidebar').classList.remove('active')">&times;</span>
+    <!-- RIGHT PANEL -->
+    <div id="rightPanel">
+        <div class="panel-header">
+            <h2 id="panelTitle">Entity Details</h2>
+            <span class="close-btn" onclick="closeRightPanel()">&times;</span>
         </div>
-        <hr style="border:0; border-top:1px solid #333; margin:10px 0;">
-        <div id="sb-content" style="font-size:13px; color:#ccc; line-height:1.5;"></div>
+        <div class="panel-content" id="panelContent"></div>
+    </div>
+
+    <!-- BOTTOM PANEL (Analytics) -->
+    <div id="bottomPanel">
+        <div class="tabs">
+            <div class="tab active" data-tab="analytics">Analytics</div>
+            <div class="tab" data-tab="insights">Insights</div>
+            <div class="tab" data-tab="history">History</div>
+            <div class="tab" data-tab="console">Console</div>
+        </div>
+        <div class="tab-content" id="analyticsContent">
+            <canvas id="analyticsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- CONTEXT MENU -->
+    <div id="contextMenu">
+        <div class="context-menu-item" onclick="contextMenuAction('edit')">
+            <i class="fas fa-edit"></i> Edit
+        </div>
+        <div class="context-menu-item" onclick="contextMenuAction('duplicate')">
+            <i class="fas fa-copy"></i> Duplicate
+        </div>
+        <div class="context-menu-item" onclick="contextMenuAction('delete')">
+            <i class="fas fa-trash"></i> Delete
+        </div>
+        <div class="context-menu-item" onclick="contextMenuAction('properties')">
+            <i class="fas fa-cog"></i> Properties
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="queryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Query Builder</h2>
+                <span class="close-btn" onclick="closeModal('queryModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="property-group">
+                    <label>Query Type</label>
+                    <select id="queryType">
+                        <option value="find">Find Entities</option>
+                        <option value="path">Find Path</option>
+                        <option value="neighbors">Find Neighbors</option>
+                        <option value="depth">Depth Analysis</option>
+                    </select>
+                </div>
+                <div class="property-group">
+                    <label>Query Expression</label>
+                    <textarea id="queryExpression" rows="4" placeholder="e.g., type='Class' AND hasProperty='name'"></textarea>
+                </div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="executeQuery()">
+                    <i class="fas fa-play"></i> Execute Query
+                </button>
+                <div id="queryResults" style="margin-top: 20px;"></div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // --- CONFIG ---
-        const Colors = { supplier: '#ff4d4d', factory: '#4d79ff', customer: '#33ff99', default: '#888' };
-        let cy = null;
-        let globe = null;
-        let appData = { nodes: [], edges: [] };
-
-        // --- 1. SETUP ---
-        window.onload = function() {
-            initCy();
-            // เรียก resize ทุกครั้งที่หน้าจอเปลี่ยน เพื่อแก้กราฟกองมุม
-            window.addEventListener('resize', () => { if(cy) { cy.resize(); cy.fit(); } });
+        // ========================================
+        // GLOBAL STATE
+        // ========================================
+        const AppState = {
+            currentOntology: 'default',
+            ontologies: {
+                default: {
+                    id: 'default',
+                    name: 'Default Ontology',
+                    version: '1.0',
+                    nodes: [],
+                    edges: [],
+                    metadata: {
+                        created: new Date().toISOString(),
+                        modified: new Date().toISOString()
+                    }
+                }
+            },
+            currentMode: 'network',
+            selectedNode: null,
+            history: [],
+            analytics: {
+                nodeTypes: {},
+                relationTypes: {},
+                depthDistribution: []
+            }
         };
 
-        function initCy() {
+        const Colors = {
+            class: '#00ff88',
+            property: '#00d4ff',
+            instance: '#ff00ff',
+            concept: '#ffaa00',
+            relation: '#ff3366',
+            default: '#666666'
+        };
+
+        const RelationTypes = [
+            { id: 'subClassOf', label: 'SubClass Of', color: '#00ff88' },
+            { id: 'instanceOf', label: 'Instance Of', color: '#00d4ff' },
+            { id: 'hasProperty', label: 'Has Property', color: '#ffaa00' },
+            { id: 'relatedTo', label: 'Related To', color: '#ff00ff' },
+            { id: 'partOf', label: 'Part Of', color: '#ff3366' },
+            { id: 'dependsOn', label: 'Depends On', color: '#00ff00' }
+        ];
+
+        let cy = null;
+        let globe = null;
+        let analyticsChart = null;
+        let currentContextNode = null;
+
+        // ========================================
+        // INITIALIZATION
+        // ========================================
+        window.onload = function() {
+            initCytoscape();
+            initEventListeners();
+            initAnalyticsChart();
+            loadDemoData();
+            updateStatistics();
+            
+            window.addEventListener('resize', () => {
+                if(cy) { cy.resize(); cy.fit(); }
+            });
+        };
+
+        function initCytoscape() {
             cy = cytoscape({
                 container: document.getElementById('cy'),
                 style: [
-                    { selector: 'node', style: { 'label': 'data(label)', 'color': '#fff', 'font-size': 10, 'background-color': '#333', 'border-width': 2, 'border-color': ele => Colors[ele.data('type')] || '#888', 'width': 40, 'height': 40, 'text-valign': 'bottom', 'text-margin-y': 5 } },
-                    { selector: 'edge', style: { 'width': 1, 'line-color': '#555', 'target-arrow-color': '#555', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' } },
-                    { selector: ':parent', style: { 'background-opacity': 0.05, 'border-width': 1, 'border-style': 'dashed', 'label': 'data(label)', 'text-valign': 'top', 'color': '#aaa' } }
+                    {
+                        selector: 'node',
+                        style: {
+                            'label': 'data(label)',
+                            'color': '#fff',
+                            'font-size': 11,
+                            'font-weight': 600,
+                            'background-color': ele => Colors[ele.data('type')] || Colors.default,
+                            'border-width': 3,
+                            'border-color': '#fff',
+                            'width': 50,
+                            'height': 50,
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'text-outline-width': 2,
+                            'text-outline-color': '#000',
+                            'transition-property': 'background-color, border-color, border-width',
+                            'transition-duration': '0.3s'
+                        }
+                    },
+                    {
+                        selector: 'node:selected',
+                        style: {
+                            'border-width': 5,
+                            'border-color': '#00ff88',
+                            'overlay-color': '#00ff88',
+                            'overlay-padding': 10,
+                            'overlay-opacity': 0.3
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': ele => RelationTypes.find(r => r.id === ele.data('relationType'))?.color || '#555',
+                            'target-arrow-color': ele => RelationTypes.find(r => r.id === ele.data('relationType'))?.color || '#555',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(label)',
+                            'font-size': 9,
+                            'text-rotation': 'autorotate',
+                            'text-margin-y': -10,
+                            'color': '#ccc',
+                            'text-outline-width': 2,
+                            'text-outline-color': '#000'
+                        }
+                    },
+                    {
+                        selector: 'edge:selected',
+                        style: {
+                            'line-color': '#00ff88',
+                            'target-arrow-color': '#00ff88',
+                            'width': 4
+                        }
+                    },
+                    {
+                        selector: ':parent',
+                        style: {
+                            'background-opacity': 0.1,
+                            'border-width': 2,
+                            'border-style': 'dashed',
+                            'border-color': '#555',
+                            'label': 'data(label)',
+                            'text-valign': 'top',
+                            'text-halign': 'center',
+                            'color': '#aaa',
+                            'font-size': 14,
+                            'font-weight': 700
+                        }
+                    }
                 ],
-                layout: { name: 'grid' } // เริ่มต้นด้วย grid โง่ๆ ไปก่อน
+                layout: { name: 'grid' }
             });
 
+            // Event Handlers
             cy.on('tap', 'node', evt => {
-                if(!evt.target.isParent()) openSidebar(evt.target.data());
+                if(!evt.target.isParent()) {
+                    selectNode(evt.target);
+                }
+            });
+
+            cy.on('cxttap', 'node', evt => {
+                showContextMenu(evt.originalEvent, evt.target);
+            });
+
+            cy.on('tap', evt => {
+                if(evt.target === cy) {
+                    hideContextMenu();
+                }
+            });
+
+            // Double click to edit
+            cy.on('dbltap', 'node', evt => {
+                if(!evt.target.isParent()) {
+                    editNode(evt.target);
+                }
             });
         }
 
-        // --- 2. EXCEL IMPORT LOGIC (FIXED) ---
-        document.getElementById('fileInput').addEventListener('change', async (e) => {
+        function initEventListeners() {
+            // Search
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', handleSearch);
+            searchInput.addEventListener('focus', () => {
+                if(searchInput.value) handleSearch();
+            });
+            searchInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    document.getElementById('searchResults').style.display = 'none';
+                }, 200);
+            });
+
+            // File Import
+            document.getElementById('fileInput').addEventListener('change', handleFileImport);
+
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            // Click outside to close context menu
+            document.addEventListener('click', hideContextMenu);
+        }
+
+        function initAnalyticsChart() {
+            const ctx = document.getElementById('analyticsChart');
+            analyticsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Classes', 'Properties', 'Instances', 'Relations'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(0, 255, 136, 0.7)',
+                            'rgba(0, 212, 255, 0.7)',
+                            'rgba(255, 170, 0, 0.7)',
+                            'rgba(255, 0, 255, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(0, 255, 136, 1)',
+                            'rgba(0, 212, 255, 1)',
+                            'rgba(255, 170, 0, 1)',
+                            'rgba(255, 0, 255, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ========================================
+        // DATA MANAGEMENT
+        // ========================================
+        function getCurrentOntology() {
+            return AppState.ontologies[AppState.currentOntology];
+        }
+
+        function addNodeToOntology(nodeData) {
+            const ontology = getCurrentOntology();
+            const node = {
+                group: 'nodes',
+                data: {
+                    id: nodeData.id || generateId(),
+                    label: nodeData.label || 'Unnamed',
+                    type: nodeData.type || 'concept',
+                    properties: nodeData.properties || {},
+                    created: new Date().toISOString()
+                }
+            };
+            ontology.nodes.push(node);
+            saveHistory('add_node', node);
+            updateStatistics();
+            return node;
+        }
+
+        function addEdgeToOntology(edgeData) {
+            const ontology = getCurrentOntology();
+            const edge = {
+                group: 'edges',
+                data: {
+                    id: edgeData.id || generateId(),
+                    source: edgeData.source,
+                    target: edgeData.target,
+                    label: edgeData.label || '',
+                    relationType: edgeData.relationType || 'relatedTo',
+                    properties: edgeData.properties || {},
+                    created: new Date().toISOString()
+                }
+            };
+            ontology.edges.push(edge);
+            saveHistory('add_edge', edge);
+            updateStatistics();
+            return edge;
+        }
+
+        function removeNodeFromOntology(nodeId) {
+            const ontology = getCurrentOntology();
+            ontology.nodes = ontology.nodes.filter(n => n.data.id !== nodeId);
+            ontology.edges = ontology.edges.filter(e => 
+                e.data.source !== nodeId && e.data.target !== nodeId
+            );
+            saveHistory('remove_node', nodeId);
+            updateStatistics();
+        }
+
+        function updateStatistics() {
+            const ontology = getCurrentOntology();
+            
+            // Count entities
+            document.getElementById('statEntities').textContent = ontology.nodes.length;
+            document.getElementById('statRelations').textContent = ontology.edges.length;
+            
+            // Calculate depth
+            const depths = calculateNodeDepths();
+            document.getElementById('statDepth').textContent = Math.max(...Object.values(depths), 0);
+            
+            // Update analytics
+            updateAnalytics();
+        }
+
+        function updateAnalytics() {
+            const ontology = getCurrentOntology();
+            
+            // Count by type
+            const typeCounts = {
+                class: 0,
+                property: 0,
+                instance: 0,
+                relation: 0
+            };
+            
+            ontology.nodes.forEach(n => {
+                const type = n.data.type;
+                if(typeCounts.hasOwnProperty(type)) {
+                    typeCounts[type]++;
+                }
+            });
+            
+            // Update chart
+            if(analyticsChart) {
+                analyticsChart.data.datasets[0].data = [
+                    typeCounts.class,
+                    typeCounts.property,
+                    typeCounts.instance,
+                    ontology.edges.length
+                ];
+                analyticsChart.update();
+            }
+        }
+
+        function calculateNodeDepths() {
+            const ontology = getCurrentOntology();
+            const depths = {};
+            const visited = new Set();
+            
+            function dfs(nodeId, depth = 0) {
+                if(visited.has(nodeId)) return;
+                visited.add(nodeId);
+                depths[nodeId] = Math.max(depths[nodeId] || 0, depth);
+                
+                ontology.edges
+                    .filter(e => e.data.source === nodeId)
+                    .forEach(e => dfs(e.data.target, depth + 1));
+            }
+            
+            // Start from nodes with no incoming edges
+            const targets = new Set(ontology.edges.map(e => e.data.target));
+            ontology.nodes.forEach(n => {
+                if(!targets.has(n.data.id)) {
+                    dfs(n.data.id);
+                }
+            });
+            
+            return depths;
+        }
+
+        function saveHistory(action, data) {
+            AppState.history.push({
+                timestamp: new Date().toISOString(),
+                action,
+                data: JSON.parse(JSON.stringify(data))
+            });
+            
+            // Limit history to 100 items
+            if(AppState.history.length > 100) {
+                AppState.history.shift();
+            }
+        }
+
+        function generateId() {
+            return 'node_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // ========================================
+        // FILE IMPORT/EXPORT
+        // ========================================
+        async function handleFileImport(e) {
             const file = e.target.files[0];
             if(!file) return;
             
-            document.getElementById('loader').style.display = 'flex';
+            showLoader(true);
             
             try {
-                const data = await file.arrayBuffer();
-                const workbook = XLSX.read(data);
+                const ext = file.name.split('.').pop().toLowerCase();
                 
-                // อ่าน Sheet แรกเสมอ (แก้ปัญหาชื่อ Sheet ไม่ตรง)
-                const firstSheetName = workbook.SheetNames[0];
-                const rawNodes = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
+                if(['xlsx', 'xls'].includes(ext)) {
+                    await importExcel(file);
+                } else if(ext === 'json') {
+                    await importJSON(file);
+                } else if(['owl', 'rdf'].includes(ext)) {
+                    await importOWL(file);
+                } else {
+                    throw new Error('Unsupported file format');
+                }
                 
-                // พยายามหา Sheet ที่ 2 ถ้ามี ให้เป็น Edges
-                let rawEdges = [];
-                if(workbook.SheetNames.length > 1) {
-                    rawEdges = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[1]]);
-                }
-
-                // Map Data (แปลง key เป็น lowercase กันเหนียว)
-                appData.nodes = rawNodes.map(r => {
-                    // หา key ที่น่าจะเป็น id, label, type (ไม่สนตัวพิมพ์เล็กใหญ่)
-                    const keys = Object.keys(r);
-                    const getId = k => keys.find(key => key.toLowerCase() === k);
-                    
-                    return {
-                        group: 'nodes',
-                        data: {
-                            id: (r[getId('id')] || Math.random()).toString(),
-                            label: r[getId('label')] || 'Unnamed',
-                            type: (r[getId('type')] || 'default').toLowerCase(),
-                            details: JSON.stringify(r) // เก็บข้อมูลดิบไว้โชว์
-                        }
-                    };
-                });
-
-                appData.edges = rawEdges.map(r => {
-                    const keys = Object.keys(r);
-                    const getId = k => keys.find(key => key.toLowerCase() === k);
-                    return {
-                        group: 'edges',
-                        data: {
-                            source: (r[getId('source')] || '').toString(),
-                            target: (r[getId('target')] || '').toString()
-                        }
-                    };
-                });
-
-                if(appData.nodes.length === 0) alert("No nodes found in Excel!");
-                else {
-                    setMode('network'); // โหลดกราฟทันที
-                    setTimeout(() => alert(`Imported: ${appData.nodes.length} nodes`), 100);
-                }
-
-            } catch (err) {
-                alert("Error: " + err.message);
+                setMode(AppState.currentMode);
+                showNotification('Import successful!', 'success');
+                
+            } catch(err) {
+                console.error(err);
+                showNotification('Import failed: ' + err.message, 'error');
             } finally {
-                document.getElementById('loader').style.display = 'none';
+                showLoader(false);
+                e.target.value = '';
             }
-        });
+        }
 
-        // --- 3. MODE SWITCHING ---
+        async function importExcel(file) {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data);
+            
+            const firstSheetName = workbook.SheetNames[0];
+            const rawNodes = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
+            
+            let rawEdges = [];
+            if(workbook.SheetNames.length > 1) {
+                rawEdges = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[1]]);
+            }
+            
+            const ontology = getCurrentOntology();
+            ontology.nodes = [];
+            ontology.edges = [];
+            
+            // Process nodes
+            rawNodes.forEach(r => {
+                const keys = Object.keys(r);
+                const getId = k => keys.find(key => key.toLowerCase() === k);
+                
+                addNodeToOntology({
+                    id: (r[getId('id')] || generateId()).toString(),
+                    label: r[getId('label')] || r[getId('name')] || 'Unnamed',
+                    type: (r[getId('type')] || 'concept').toLowerCase(),
+                    properties: r
+                });
+            });
+            
+            // Process edges
+            rawEdges.forEach(r => {
+                const keys = Object.keys(r);
+                const getId = k => keys.find(key => key.toLowerCase() === k);
+                
+                addEdgeToOntology({
+                    source: (r[getId('source')] || r[getId('from')]).toString(),
+                    target: (r[getId('target')] || r[getId('to')]).toString(),
+                    label: r[getId('label')] || r[getId('relation')] || '',
+                    relationType: r[getId('type')] || 'relatedTo'
+                });
+            });
+        }
+
+        async function importJSON(file) {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            const ontology = getCurrentOntology();
+            
+            if(data.nodes && Array.isArray(data.nodes)) {
+                ontology.nodes = data.nodes;
+            }
+            
+            if(data.edges && Array.isArray(data.edges)) {
+                ontology.edges = data.edges;
+            }
+        }
+
+        async function importOWL(file) {
+            // Simplified OWL/RDF import
+            const text = await file.text();
+            showNotification('OWL/RDF import is simplified. Use JSON for full features.', 'warning');
+            
+            // Basic parsing (would need proper RDF parser in production)
+            const classMatches = text.matchAll(/<owl:Class[^>]*rdf:about="([^"]*)"[^>]*>/g);
+            const ontology = getCurrentOntology();
+            
+            for(const match of classMatches) {
+                const uri = match[1];
+                const label = uri.split('#').pop();
+                addNodeToOntology({
+                    id: uri,
+                    label: label,
+                    type: 'class',
+                    properties: { uri }
+                });
+            }
+        }
+
+        function exportOntology() {
+            const ontology = getCurrentOntology();
+            
+            const exportData = {
+                metadata: {
+                    name: ontology.name,
+                    version: ontology.version,
+                    created: ontology.metadata.created,
+                    modified: new Date().toISOString(),
+                    exportedBy: 'FOUNDRY V8'
+                },
+                nodes: ontology.nodes,
+                edges: ontology.edges
+            };
+            
+            const json = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ontology_${ontology.id}_${Date.now()}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            showNotification('Ontology exported successfully!', 'success');
+        }
+
+        // ========================================
+        // VISUALIZATION MODES
+        // ========================================
         function setMode(mode) {
+            AppState.currentMode = mode;
+            
             document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget?.classList.add('active'); // ? เช็คเผื่อกดจาก code
-
+            event.currentTarget?.classList.add('active');
+            
             const cyDiv = document.getElementById('cy');
             const globeDiv = document.getElementById('globe-viz');
-
-            // Reset Visibility
-            globeDiv.style.opacity = 0; globeDiv.style.pointerEvents = 'none';
-            cyDiv.style.opacity = 1; cyDiv.style.pointerEvents = 'auto';
-
+            
+            globeDiv.style.opacity = 0;
+            globeDiv.style.pointerEvents = 'none';
+            cyDiv.style.opacity = 1;
+            cyDiv.style.pointerEvents = 'auto';
+            
             if(mode === 'globe') {
-                cyDiv.style.opacity = 0; cyDiv.style.pointerEvents = 'none';
-                globeDiv.style.opacity = 1; globeDiv.style.pointerEvents = 'auto';
+                cyDiv.style.opacity = 0;
+                cyDiv.style.pointerEvents = 'none';
+                globeDiv.style.opacity = 1;
+                globeDiv.style.pointerEvents = 'auto';
                 initGlobe();
             } else {
+                const ontology = getCurrentOntology();
                 cy.elements().remove();
                 
                 if(mode === 'layers') {
-                    // LAYERS MODE: ใช้ Compound Nodes จัดกลุ่ม
-                    // สร้าง Parents
-                    cy.add([
-                        { group:'nodes', data:{id:'L3', label:'CUSTOMERS'} },
-                        { group:'nodes', data:{id:'L2', label:'FACTORIES'} },
-                        { group:'nodes', data:{id:'L1', label:'SUPPLIERS'} }
-                    ]);
-                    
-                    // Assign Parents
-                    const layeredNodes = appData.nodes.map(n => {
-                        let pid = 'L2';
-                        if(n.data.type === 'supplier') pid = 'L1';
-                        if(n.data.type === 'customer') pid = 'L3';
-                        return { group:'nodes', data:{...n.data, parent: pid} };
-                    });
-                    
-                    cy.add([...layeredNodes, ...appData.edges]);
-                    cy.layout({ name: 'dagre', rankDir: 'BT', padding: 50 }).run();
-                    
+                    renderLayeredView(ontology);
                 } else {
-                    // NETWORK MODE
-                    cy.add([...appData.nodes, ...appData.edges]);
-                    cy.layout({ name: 'cose', animate: true }).run();
+                    renderNetworkView(ontology);
                 }
                 
-                // *** FIX: กราฟกองมุม ***
                 setTimeout(() => {
                     cy.resize();
                     cy.fit();
                     cy.center();
-                }, 100); // รอ Layout รันเสร็จนิดนึงแล้วบังคับ Fit จอ
+                }, 100);
             }
         }
 
-        // --- 4. GLOBE ---
+        function renderNetworkView(ontology) {
+            cy.add([...ontology.nodes, ...ontology.edges]);
+            cy.layout({ 
+                name: 'cose',
+                animate: true,
+                animationDuration: 500,
+                nodeRepulsion: 8000,
+                idealEdgeLength: 100
+            }).run();
+        }
+
+        function renderLayeredView(ontology) {
+            // Create layer parents
+            const layers = [
+                { id: 'layer_1', label: 'CLASSES', type: 'class' },
+                { id: 'layer_2', label: 'PROPERTIES', type: 'property' },
+                { id: 'layer_3', label: 'INSTANCES', type: 'instance' }
+            ];
+            
+            layers.forEach(layer => {
+                cy.add({
+                    group: 'nodes',
+                    data: { id: layer.id, label: layer.label }
+                });
+            });
+            
+            // Assign nodes to layers
+            const layeredNodes = ontology.nodes.map(n => {
+                let parentId = 'layer_1';
+                if(n.data.type === 'property') parentId = 'layer_2';
+                if(n.data.type === 'instance') parentId = 'layer_3';
+                
+                return {
+                    group: 'nodes',
+                    data: { ...n.data, parent: parentId }
+                };
+            });
+            
+            cy.add([...layeredNodes, ...ontology.edges]);
+            cy.layout({ 
+                name: 'dagre',
+                rankDir: 'TB',
+                padding: 50,
+                spacingFactor: 1.5
+            }).run();
+        }
+
         function initGlobe() {
             if(globe) return;
-            const gData = appData.nodes.map(n => ({
-                lat: (Math.random()*160)-80, lng: (Math.random()*360)-180,
-                color: Colors[n.data.type] || 'white',
-                name: n.data.label
+            
+            const ontology = getCurrentOntology();
+            const gData = ontology.nodes.map(n => ({
+                lat: (Math.random() * 160) - 80,
+                lng: (Math.random() * 360) - 180,
+                color: Colors[n.data.type] || Colors.default,
+                name: n.data.label,
+                size: 0.5
             }));
             
             globe = Globe()
             (document.getElementById('globe-viz'))
             .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+            .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
             .pointsData(gData)
             .pointAltitude(0.1)
             .pointColor('color')
-            .labelsData(gData) // ใส่ชื่อ
-            .labelLat(d=>d.lat)
-            .labelLng(d=>d.lng)
-            .labelText(d=>d.name)
+            .pointRadius('size')
+            .labelsData(gData)
+            .labelLat(d => d.lat)
+            .labelLng(d => d.lng)
+            .labelText(d => d.name)
             .labelSize(1.5)
-            .labelDotRadius(0.5);
+            .labelDotRadius(0.5)
+            .labelColor(() => 'rgba(255,255,255,0.8)');
         }
 
-        // --- 5. DEMO DATA ---
-        function loadDemo() {
-            appData.nodes = [
-                {group:'nodes', data:{id:'s1', label:'Supplier A', type:'supplier'}},
-                {group:'nodes', data:{id:'s2', label:'Supplier B', type:'supplier'}},
-                {group:'nodes', data:{id:'f1', label:'Main Factory', type:'factory'}},
-                {group:'nodes', data:{id:'c1', label:'Store 1', type:'customer'}},
-                {group:'nodes', data:{id:'c2', label:'Store 2', type:'customer'}}
-            ];
-            appData.edges = [
-                {group:'edges', data:{source:'s1', target:'f1'}},
-                {group:'edges', data:{source:'s2', target:'f1'}},
-                {group:'edges', data:{source:'f1', target:'c1'}},
-                {group:'edges', data:{source:'f1', target:'c2'}}
-            ];
+        // ========================================
+        // ENTITY MANAGEMENT
+        // ========================================
+        function addEntity() {
+            const nodeData = {
+                label: prompt('Entity name:', 'New Entity'),
+                type: 'concept'
+            };
+            
+            if(!nodeData.label) return;
+            
+            const node = addNodeToOntology(nodeData);
+            setMode(AppState.currentMode);
+            
+            // Select the new node
+            setTimeout(() => {
+                const cyNode = cy.getElementById(node.data.id);
+                if(cyNode) selectNode(cyNode);
+            }, 200);
+        }
+
+        function addRelationship() {
+            const selected = cy.$(':selected');
+            if(selected.length !== 2) {
+                alert('Please select exactly 2 nodes to create a relationship');
+                return;
+            }
+            
+            const source = selected[0].id();
+            const target = selected[1].id();
+            
+            // Show relation type selector
+            const relType = prompt('Relation type (subClassOf, instanceOf, hasProperty, relatedTo, partOf, dependsOn):', 'relatedTo');
+            if(!relType) return;
+            
+            addEdgeToOntology({
+                source,
+                target,
+                label: relType,
+                relationType: relType
+            });
+            
+            setMode(AppState.currentMode);
+        }
+
+        function selectNode(node) {
+            AppState.selectedNode = node;
+            showNodeDetails(node.data());
+        }
+
+        function editNode(node) {
+            const data = node.data();
+            showNodeEditor(data);
+        }
+
+        function showNodeDetails(data) {
+            const panel = document.getElementById('rightPanel');
+            const content = document.getElementById('panelContent');
+            
+            document.getElementById('panelTitle').textContent = data.label;
+            
+            let html = `
+                <div class="property-group">
+                    <label>ID</label>
+                    <input type="text" value="${data.id}" readonly />
+                </div>
+                <div class="property-group">
+                    <label>Type</label>
+                    <input type="text" value="${data.type}" readonly />
+                </div>
+                <div class="property-group">
+                    <label>Label</label>
+                    <input type="text" value="${data.label}" id="editLabel" />
+                </div>
+            `;
+            
+            if(data.properties) {
+                html += '<h3 style="margin: 20px 0 10px; font-size: 14px; color: var(--accent);">PROPERTIES</h3>';
+                for(const [key, value] of Object.entries(data.properties)) {
+                    html += `
+                        <div class="property-group">
+                            <label>${key}</label>
+                            <input type="text" value="${value}" readonly />
+                        </div>
+                    `;
+                }
+            }
+            
+            html += `
+                <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="saveNodeEdit('${data.id}')">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button class="btn btn-danger" style="width: 100%; margin-top: 10px;" onclick="deleteNode('${data.id}')">
+                    <i class="fas fa-trash"></i> Delete Entity
+                </button>
+            `;
+            
+            content.innerHTML = html;
+            panel.classList.add('active');
+        }
+
+        function showNodeEditor(data) {
+            showNodeDetails(data);
+        }
+
+        function saveNodeEdit(nodeId) {
+            const newLabel = document.getElementById('editLabel').value;
+            const ontology = getCurrentOntology();
+            
+            const node = ontology.nodes.find(n => n.data.id === nodeId);
+            if(node) {
+                node.data.label = newLabel;
+                node.data.modified = new Date().toISOString();
+                saveHistory('edit_node', node);
+                setMode(AppState.currentMode);
+                showNotification('Entity updated', 'success');
+            }
+        }
+
+        function deleteNode(nodeId) {
+            if(!confirm('Delete this entity and all its relationships?')) return;
+            
+            removeNodeFromOntology(nodeId);
+            closeRightPanel();
+            setMode(AppState.currentMode);
+            showNotification('Entity deleted', 'success');
+        }
+
+        function closeRightPanel() {
+            document.getElementById('rightPanel').classList.remove('active');
+        }
+
+        // ========================================
+        // SEARCH
+        // ========================================
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if(!query) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            const ontology = getCurrentOntology();
+            const results = ontology.nodes.filter(n => 
+                n.data.label.toLowerCase().includes(query) ||
+                n.data.type.toLowerCase().includes(query) ||
+                JSON.stringify(n.data.properties).toLowerCase().includes(query)
+            );
+            
+            if(results.length === 0) {
+                resultsDiv.innerHTML = '<div class="search-result-item">No results found</div>';
+            } else {
+                resultsDiv.innerHTML = results.map(n => `
+                    <div class="search-result-item" onclick="focusNode('${n.data.id}')">
+                        <div style="font-weight: 600;">${n.data.label}</div>
+                        <div style="font-size: 11px; color: #9ca3af;">${n.data.type} • ${n.data.id}</div>
+                    </div>
+                `).join('');
+            }
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        function focusNode(nodeId) {
+            const node = cy.getElementById(nodeId);
+            if(node) {
+                cy.animate({
+                    center: { eles: node },
+                    zoom: 2
+                }, {
+                    duration: 500
+                });
+                selectNode(node);
+            }
+            document.getElementById('searchResults').style.display = 'none';
+        }
+
+        // ========================================
+        // CONTEXT MENU
+        // ========================================
+        function showContextMenu(event, node) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            currentContextNode = node;
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            menu.style.left = event.pageX + 'px';
+            menu.style.top = event.pageY + 'px';
+        }
+
+        function hideContextMenu() {
+            document.getElementById('contextMenu').style.display = 'none';
+        }
+
+        function contextMenuAction(action) {
+            if(!currentContextNode) return;
+            
+            const data = currentContextNode.data();
+            
+            switch(action) {
+                case 'edit':
+                    editNode(currentContextNode);
+                    break;
+                case 'duplicate':
+                    duplicateNode(data);
+                    break;
+                case 'delete':
+                    deleteNode(data.id);
+                    break;
+                case 'properties':
+                    showNodeDetails(data);
+                    break;
+            }
+            
+            hideContextMenu();
+        }
+
+        function duplicateNode(data) {
+            const newNode = addNodeToOntology({
+                label: data.label + ' (Copy)',
+                type: data.type,
+                properties: {...data.properties}
+            });
+            setMode(AppState.currentMode);
+            showNotification('Entity duplicated', 'success');
+        }
+
+        // ========================================
+        // QUERY BUILDER
+        // ========================================
+        function showQueryBuilder() {
+            document.getElementById('queryModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function executeQuery() {
+            const type = document.getElementById('queryType').value;
+            const expression = document.getElementById('queryExpression').value;
+            
+            showLoader(true);
+            
+            setTimeout(() => {
+                try {
+                    const results = performQuery(type, expression);
+                    displayQueryResults(results);
+                    showNotification('Query executed successfully', 'success');
+                } catch(err) {
+                    showNotification('Query error: ' + err.message, 'error');
+                } finally {
+                    showLoader(false);
+                }
+            }, 500);
+        }
+
+        function performQuery(type, expression) {
+            const ontology = getCurrentOntology();
+            
+            switch(type) {
+                case 'find':
+                    return findEntities(expression, ontology);
+                case 'path':
+                    return findPath(expression, ontology);
+                case 'neighbors':
+                    return findNeighbors(expression, ontology);
+                case 'depth':
+                    return analyzeDepth(ontology);
+                default:
+                    return [];
+            }
+        }
+
+        function findEntities(expression, ontology) {
+            // Simple expression parser (would be more sophisticated in production)
+            const conditions = expression.split('AND').map(c => c.trim());
+            
+            return ontology.nodes.filter(n => {
+                return conditions.every(cond => {
+                    const [key, value] = cond.split('=').map(s => s.trim().replace(/'/g, ''));
+                    return n.data[key] === value || 
+                           (n.data.properties && n.data.properties[key] === value);
+                });
+            });
+        }
+
+        function findPath(expression, ontology) {
+            // Simplified path finding
+            return { message: 'Path finding not fully implemented in demo' };
+        }
+
+        function findNeighbors(expression, ontology) {
+            const nodeId = expression.trim();
+            const neighbors = new Set();
+            
+            ontology.edges.forEach(e => {
+                if(e.data.source === nodeId) neighbors.add(e.data.target);
+                if(e.data.target === nodeId) neighbors.add(e.data.source);
+            });
+            
+            return ontology.nodes.filter(n => neighbors.has(n.data.id));
+        }
+
+        function analyzeDepth(ontology) {
+            const depths = calculateNodeDepths();
+            return { depths, maxDepth: Math.max(...Object.values(depths), 0) };
+        }
+
+        function displayQueryResults(results) {
+            const resultsDiv = document.getElementById('queryResults');
+            
+            if(Array.isArray(results)) {
+                resultsDiv.innerHTML = `
+                    <h4 style="margin-bottom: 10px;">Results (${results.length})</h4>
+                    ${results.map(r => `
+                        <div style="padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 4px;">
+                            ${r.data ? r.data.label : JSON.stringify(r)}
+                        </div>
+                    `).join('')}
+                `;
+            } else {
+                resultsDiv.innerHTML = `<pre>${JSON.stringify(results, null, 2)}</pre>`;
+            }
+        }
+
+        // ========================================
+        // UTILITIES
+        // ========================================
+        function toggleLeftSidebar() {
+            const sidebar = document.getElementById('leftSidebar');
+            const viewport = document.getElementById('viewport');
+            const bottomPanel = document.getElementById('bottomPanel');
+            
+            sidebar.classList.toggle('collapsed');
+            viewport.classList.toggle('fullwidth');
+            bottomPanel.classList.toggle('fullwidth');
+            
+            setTimeout(() => {
+                if(cy) cy.resize();
+            }, 300);
+        }
+
+        function toggleAnalytics() {
+            document.getElementById('bottomPanel').classList.toggle('active');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        }
+
+        function showLoader(show) {
+            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        }
+
+        function showNotification(message, type = 'info') {
+            // Simple alert for demo (would use toast in production)
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function validateOntology() {
+            const ontology = getCurrentOntology();
+            const issues = [];
+            
+            // Check for orphaned nodes
+            const connectedNodes = new Set();
+            ontology.edges.forEach(e => {
+                connectedNodes.add(e.data.source);
+                connectedNodes.add(e.data.target);
+            });
+            
+            const orphans = ontology.nodes.filter(n => !connectedNodes.has(n.data.id));
+            if(orphans.length > 0) {
+                issues.push(`${orphans.length} orphaned entities found`);
+            }
+            
+            // Check for invalid edges
+            const nodeIds = new Set(ontology.nodes.map(n => n.data.id));
+            const invalidEdges = ontology.edges.filter(e => 
+                !nodeIds.has(e.data.source) || !nodeIds.has(e.data.target)
+            );
+            
+            if(invalidEdges.length > 0) {
+                issues.push(`${invalidEdges.length} invalid relationships found`);
+            }
+            
+            if(issues.length === 0) {
+                alert('✓ Ontology is valid!');
+            } else {
+                alert('⚠ Issues found:\n' + issues.join('\n'));
+            }
+        }
+
+        function clearOntology() {
+            if(!confirm('Clear all entities and relationships?')) return;
+            
+            const ontology = getCurrentOntology();
+            ontology.nodes = [];
+            ontology.edges = [];
+            setMode(AppState.currentMode);
+            updateStatistics();
+            showNotification('Ontology cleared', 'success');
+        }
+
+        function createNewOntology() {
+            const name = prompt('Ontology name:', 'New Ontology');
+            if(!name) return;
+            
+            const id = 'onto_' + Date.now();
+            AppState.ontologies[id] = {
+                id,
+                name,
+                version: '1.0',
+                nodes: [],
+                edges: [],
+                metadata: {
+                    created: new Date().toISOString(),
+                    modified: new Date().toISOString()
+                }
+            };
+            
+            AppState.currentOntology = id;
+            updateOntologyList();
             setMode('network');
         }
 
-        function openSidebar(data) {
-            document.getElementById('sidebar').classList.add('active');
-            document.getElementById('sb-content').innerText = JSON.stringify(data, null, 2);
+        function updateOntologyList() {
+            // Would update the sidebar list in full implementation
+            console.log('Ontology list updated');
+        }
+
+        function loadDemoData() {
+            const ontology = getCurrentOntology();
+            
+            // Create demo entities
+            addNodeToOntology({ id: 'c1', label: 'Thing', type: 'class' });
+            addNodeToOntology({ id: 'c2', label: 'Person', type: 'class' });
+            addNodeToOntology({ id: 'c3', label: 'Organization', type: 'class' });
+            addNodeToOntology({ id: 'p1', label: 'name', type: 'property' });
+            addNodeToOntology({ id: 'p2', label: 'age', type: 'property' });
+            addNodeToOntology({ id: 'i1', label: 'John Doe', type: 'instance' });
+            addNodeToOntology({ id: 'i2', label: 'Acme Corp', type: 'instance' });
+            
+            // Create demo relationships
+            addEdgeToOntology({ source: 'c2', target: 'c1', label: 'subClassOf', relationType: 'subClassOf' });
+            addEdgeToOntology({ source: 'c3', target: 'c1', label: 'subClassOf', relationType: 'subClassOf' });
+            addEdgeToOntology({ source: 'i1', target: 'c2', label: 'instanceOf', relationType: 'instanceOf' });
+            addEdgeToOntology({ source: 'i2', target: 'c3', label: 'instanceOf', relationType: 'instanceOf' });
+            addEdgeToOntology({ source: 'c2', target: 'p1', label: 'hasProperty', relationType: 'hasProperty' });
+            addEdgeToOntology({ source: 'c2', target: 'p2', label: 'hasProperty', relationType: 'hasProperty' });
         }
 
     </script>
