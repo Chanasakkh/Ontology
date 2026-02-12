@@ -3,213 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Ontology System (Palantir Style)</title>
+    <title>Enterprise Ontology System (Smart View)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- HIGH-END UI THEME --- */
         :root {
-            --bg-color: #050505;
-            --panel-bg: rgba(10, 10, 12, 0.95);
-            --accent-color: #3b82f6; /* Blue Neon */
-            --alert-color: #ef4444;   /* Red Alert */
-            --success-color: #10b981; /* Green Status */
-            --border-color: #333;
-            --text-main: #e0e0e0;
-            --text-sub: #9ca3af;
+            --bg-color: #0b0c10;
+            --panel-bg: rgba(31, 40, 51, 0.95);
+            --text-main: #c5c6c7;
+            --accent-blue: #66fcf1;
+            --accent-green: #45a29e;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: 'JetBrains Mono', 'Segoe UI', monospace; /* ฟอนต์สไตล์ Hacker/Dev */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             overflow: hidden;
             display: flex;
             height: 100vh;
         }
 
-        /* พื้นหลังตาราง Grid */
         #cy {
             width: 100%;
             height: 100%;
-            background-image: 
-                linear-gradient(rgba(40, 40, 40, 0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(40, 40, 40, 0.3) 1px, transparent 1px);
-            background-size: 40px 40px;
+            background-image: radial-gradient(#2d3436 1px, transparent 1px);
+            background-size: 30px 30px;
             z-index: 1;
         }
 
-        /* ปุ่ม Import ที่ดูแพงขึ้น */
+        /* Top Bar */
         .top-bar {
             position: absolute;
-            top: 0; left: 0; width: 100%;
-            height: 60px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
+            top: 20px; left: 20px;
             z-index: 10;
-            pointer-events: none;
+            display: flex;
+            gap: 15px;
         }
 
-        .system-status {
-            font-size: 12px;
-            color: var(--success-color);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .upload-wrapper {
-            pointer-events: auto;
-        }
-
-        .upload-btn {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            padding: 8px 20px;
-            border-radius: 2px;
+        .upload-btn, .reset-btn {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 12px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            transition: 0.3s;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            backdrop-filter: blur(4px);
+            transition: 0.3s;
         }
-        .upload-btn:hover {
-            background: var(--accent-color);
-            color: #fff;
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-        }
+
+        .upload-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .reset-btn:hover { border-color: #ff7675; color: #ff7675; }
+        
         #file-input { display: none; }
 
-        /* --- SIDEBAR DASHBOARD (พระเอกของเรา) --- */
-        #sidebar {
+        /* Legend (อธิบายสี) */
+        .legend {
             position: absolute;
-            top: 0;
-            right: -450px; /* ซ่อนไว้ก่อน */
-            width: 450px;
-            height: 100%;
-            background: var(--panel-bg);
-            border-left: 1px solid var(--border-color);
-            backdrop-filter: blur(10px);
-            z-index: 20;
-            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex;
-            flex-direction: column;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+            bottom: 20px; left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 10;
+            border: 1px solid #333;
+            font-size: 12px;
         }
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
 
+        /* Sidebar */
+        #sidebar {
+            position: absolute; top: 0; right: -400px;
+            width: 400px; height: 100%;
+            background: var(--panel-bg);
+            border-left: 2px solid var(--accent-blue);
+            transition: right 0.3s ease;
+            z-index: 20;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+        }
         #sidebar.active { right: 0; }
-
+        
         .sidebar-header {
             padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .node-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #fff;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .node-type-badge {
-            font-size: 10px;
-            background: #222;
-            padding: 4px 8px;
-            border: 1px solid #444;
-            color: #888;
-        }
-
-        .sidebar-content {
-            padding: 20px;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        /* KPI CARDS */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .kpi-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border-color);
-            padding: 15px;
-            border-radius: 4px;
-        }
-        .kpi-label { font-size: 10px; color: var(--text-sub); text-transform: uppercase; }
-        .kpi-value { font-size: 20px; font-weight: bold; color: #fff; margin-top: 5px; }
-        .kpi-trend { font-size: 10px; margin-top: 5px; }
-        .trend-up { color: var(--success-color); }
-        .trend-down { color: var(--alert-color); }
-
-        /* DATA TABLE */
-        .data-table-container {
-            margin-top: 20px;
-        }
-        .section-header {
-            font-size: 12px;
-            color: var(--accent-color);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            border-bottom: 1px solid #333;
-            padding-bottom: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-        th { text-align: left; color: #666; padding: 8px 0; font-weight: normal; }
-        td { padding: 8px 0; border-bottom: 1px solid #222; color: #ccc; }
-        tr:hover td { color: #fff; background: rgba(255,255,255,0.02); }
-
-        /* Chart Container */
-        .chart-container {
-            position: relative;
-            height: 200px;
-            width: 100%;
-            margin-bottom: 20px;
             background: rgba(0,0,0,0.2);
-            border: 1px solid #222;
-            padding: 10px;
+            border-bottom: 1px solid #444;
+            display: flex; justify-content: space-between; align-items: center;
         }
+        .sidebar-content { padding: 20px; overflow-y: auto; flex: 1; }
+        .close-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+        
+        h2 { margin: 0; font-size: 18px; color: var(--accent-blue); }
+        .type-badge { font-size: 10px; background: #333; padding: 3px 8px; border-radius: 10px; margin-top: 5px; display: inline-block; color: #aaa; text-transform: uppercase; }
 
-        /* Close Button */
-        .close-btn {
-            background: none; border: none; color: #666; cursor: pointer; font-size: 20px;
+        .kpi-box {
+            background: rgba(255,255,255,0.05);
+            padding: 15px; border-radius: 8px; margin-bottom: 15px;
+            border-left: 3px solid var(--accent-green);
         }
-        .close-btn:hover { color: #fff; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        .data-table td { padding: 8px; border-bottom: 1px solid #444; color: #ddd; }
+        .data-table td:first-child { color: #888; }
 
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <div class="system-status">
-            <i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> System Operational
-        </div>
-        <div class="upload-wrapper">
-            <label for="file-input" class="upload-btn">
-                <i class="fas fa-upload"></i> Load Dataset
-            </label>
-            <input type="file" id="file-input" accept=".xlsx, .xls" />
-        </div>
+        <label for="file-input" class="upload-btn"><i class="fas fa-upload"></i> Import Excel</label>
+        <input type="file" id="file-input" accept=".xlsx, .xls" />
+        <button class="reset-btn" onclick="resetLayout()"><i class="fas fa-sync"></i> Re-Layout</button>
+    </div>
+
+    <div class="legend">
+        <div style="margin-bottom:8px; font-weight:bold; color:#fff;">NODE TYPES</div>
+        <div class="legend-item"><div class="dot" style="background:#ff7675;"></div> Supplier</div>
+        <div class="legend-item"><div class="dot" style="background:#fdcb6e;"></div> Material</div>
+        <div class="legend-item"><div class="dot" style="background:#74b9ff;"></div> Factory</div>
+        <div class="legend-item"><div class="dot" style="background:#55efc4;"></div> Product</div>
+        <div class="legend-item"><div class="dot" style="background:#a29bfe;"></div> Customer</div>
     </div>
 
     <div id="cy"></div>
@@ -217,91 +137,92 @@
     <div id="sidebar">
         <div class="sidebar-header">
             <div>
-                <div class="node-title" id="sb-title">Inventory</div>
-                <span class="node-type-badge" id="sb-type">OBJECT CLUSTER</span>
+                <h2 id="sb-title">Node Name</h2>
+                <span class="type-badge" id="sb-type">TYPE</span>
             </div>
             <button class="close-btn" onclick="closeSidebar()">&times;</button>
         </div>
-
         <div class="sidebar-content">
-            
-            <div class="kpi-grid" id="sb-kpi">
-                </div>
-
-            <div class="section-header">Analytics View</div>
-            <div class="chart-container">
+            <div id="sb-details"></div>
+            <div style="height: 200px; margin-top:20px;">
                 <canvas id="myChart"></canvas>
             </div>
-
-            <div class="data-table-container">
-                <div class="section-header">Associated Items / SKUs</div>
-                <table id="sb-table">
-                    </table>
-            </div>
-
         </div>
     </div>
 
     <script>
-        // --- CONFIG & SETUP ---
+        // --- 1. CONFIGURATION ---
+        // กำหนดสีให้แต่ละประเภท เพื่อให้ดูง่ายขึ้น
+        const typeColors = {
+            'supplier': '#ff7675', // แดงอ่อน
+            'material': '#fdcb6e', // เหลือง
+            'factory':  '#74b9ff', // ฟ้า
+            'product':  '#55efc4', // เขียว
+            'customer': '#a29bfe', // ม่วง
+            'default':  '#636e72'  // เทา
+        };
+
         var cy = cytoscape({
             container: document.getElementById('cy'),
             style: [
                 {
                     selector: 'node',
                     style: {
-                        'background-color': '#0f172a',
                         'label': 'data(label)',
-                        'color': '#94a3b8',
-                        'font-size': '10px',
-                        'font-family': 'JetBrains Mono',
+                        'color': '#fff',
+                        'font-size': '14px',
+                        'font-weight': 'bold',
                         'text-valign': 'bottom',
-                        'text-margin-y': 8,
+                        'text-margin-y': 6,
+                        'text-background-color': '#000',
+                        'text-background-opacity': 0.7,
+                        'text-background-padding': '3px',
                         'width': '60px',
                         'height': '60px',
-                        'border-width': 1,
-                        'border-color': '#3b82f6',
-                        'border-opacity': 0.5,
-                        'shape': 'ellipse', // เปลี่ยนเป็นวงกลมแบบ Tech
-                        'overlay-opacity': 0
-                    }
-                },
-                {
-                    selector: 'node:selected',
-                    style: {
                         'border-width': 2,
                         'border-color': '#fff',
-                        'background-color': '#1e3a8a',
-                        'color': '#fff',
-                        'width': '70px',
-                        'height': '70px',
-                        'shadow-blur': 20,
-                        'shadow-color': '#3b82f6'
+                        'background-color': function(ele){
+                            // เลือกสีตามประเภท (Type)
+                            const type = (ele.data('type') || '').toLowerCase();
+                            return typeColors[type] || typeColors['default'];
+                        }
                     }
                 },
                 {
                     selector: 'edge',
                     style: {
-                        'width': 1,
-                        'line-color': '#334155',
-                        'target-arrow-color': '#334155',
+                        'width': 2,
+                        'line-color': '#636e72',
+                        'target-arrow-color': '#636e72',
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
                         'label': 'data(label)',
-                        'font-size': '8px',
-                        'color': '#475569',
-                        'text-background-opacity': 1,
-                        'text-background-color': '#050505'
+                        'font-size': '10px',
+                        'color': '#b2bec3',
+                        'text-background-color': '#000',
+                        'text-background-opacity': 0.8
                     }
+                },
+                {
+                    selector: '.highlighted', // Highlight เวลาคลิก
+                    style: {
+                        'border-width': 4,
+                        'border-color': '#fff',
+                        'shadow-blur': 20,
+                        'shadow-color': '#fff',
+                        'line-color': '#fff',
+                        'target-arrow-color': '#fff',
+                        'z-index': 999
+                    }
+                },
+                {
+                    selector: '.faded', // ตัวที่ไม่เกี่ยวให้จางลง
+                    style: { 'opacity': 0.1 }
                 }
-            ],
-            layout: { name: 'grid' }
+            ]
         });
 
-        // Setup Chart.js variable
-        let myChartInstance = null;
-
-        // --- FILE UPLOAD LOGIC ---
+        // --- 2. EXCEL IMPORT LOGIC ---
         document.getElementById('file-input').addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (!file) return;
@@ -313,141 +234,99 @@
                 var nodes = XLSX.utils.sheet_to_json(workbook.Sheets['Nodes']);
                 var edges = XLSX.utils.sheet_to_json(workbook.Sheets['Edges']);
 
-                var cyElements = [];
-                nodes.forEach(n => cyElements.push({ group: 'nodes', data: { id: n.id.toString(), label: n.label, type: n.type, ...n } }));
-                edges.forEach(e => cyElements.push({ group: 'edges', data: { source: e.source.toString(), target: e.target.toString(), label: e.label } }));
-
                 cy.elements().remove();
-                cy.add(cyElements);
-                cy.layout({ name: 'breadthfirst', directed: true, spacingFactor: 1.5, animate: true }).run();
+
+                // Add Nodes
+                nodes.forEach(n => {
+                    cy.add({ group: 'nodes', data: { id: n.id.toString(), label: n.label, type: n.type, details: n.details } });
+                });
+
+                // Add Edges
+                edges.forEach(e => {
+                    cy.add({ group: 'edges', data: { source: e.source.toString(), target: e.target.toString(), label: e.label } });
+                });
+
+                runLayout(); // จัดระเบียบกราฟ
             };
             reader.readAsArrayBuffer(file);
         });
 
-        // --- INTERACTION LOGIC (THE MAGIC) ---
+        function runLayout() {
+            // ใช้ Layout แบบลำดับชั้น (Breadthfirst) แต่ปรับจูนให้กระจายตัวสวยๆ
+            cy.layout({
+                name: 'breadthfirst',
+                directed: true,
+                padding: 50,
+                spacingFactor: 1.5, // ดันให้ห่างกันมากขึ้น
+                avoidOverlap: true,
+                animate: true
+            }).run();
+        }
+        
+        function resetLayout() { runLayout(); }
+
+        // --- 3. INTERACTION (CLICK & SIDEBAR) ---
+        let chartInstance = null;
+
         cy.on('tap', 'node', function(evt){
             var node = evt.target;
-            var data = node.data();
             
-            openSidebar(data);
+            // Highlight Effect
+            cy.elements().removeClass('highlighted faded');
+            var neighbors = node.neighborhood().add(node); // เอาตัวมันเองและเพื่อนบ้าน
+            cy.elements().not(neighbors).addClass('faded'); // ตัวอื่นจาง
+            neighbors.addClass('highlighted'); // ตัวที่เกี่ยวสว่าง
+
+            // Show Sidebar
+            showSidebar(node.data());
         });
 
-        cy.on('tap', function(evt){
-            if(evt.target === cy) closeSidebar();
+        cy.on('tap', function(e){
+            if(e.target === cy) {
+                cy.elements().removeClass('highlighted faded');
+                closeSidebar();
+            }
         });
 
-        function openSidebar(data) {
-            const sidebar = document.getElementById('sidebar');
-            
-            // 1. Populate Header
+        function showSidebar(data) {
+            document.getElementById('sidebar').classList.add('active');
             document.getElementById('sb-title').innerText = data.label;
-            document.getElementById('sb-type').innerText = (data.type || 'Object').toUpperCase();
+            document.getElementById('sb-type').innerText = data.type || 'UNKNOWN';
 
-            // 2. Generate "Fake" Rich Data (เพื่อให้เห็นภาพว่ามันทำอะไรได้บ้าง)
-            // ในระบบจริง ข้อมูลพวกนี้จะมาจากการ Query Database ตาม Node ID
-            renderKPIs(data);
-            renderTable(data);
-            renderChart(data);
+            // Parse Details String (e.g. "Cost: $100 | Stock: 50")
+            let html = '<div class="kpi-box"><table class="data-table">';
+            if(data.details) {
+                let parts = data.details.split('|');
+                parts.forEach(p => {
+                    let [k, v] = p.split(':');
+                    if(k && v) html += `<tr><td>${k.trim()}</td><td><b>${v.trim()}</b></td></tr>`;
+                });
+            } else {
+                html += '<tr><td>No additional details</td></tr>';
+            }
+            html += '</table></div>';
+            document.getElementById('sb-details').innerHTML = html;
 
-            // 3. Show Sidebar
-            sidebar.classList.add('active');
+            // Render Mock Chart
+            renderChart();
         }
 
         function closeSidebar() {
             document.getElementById('sidebar').classList.remove('active');
+            cy.elements().removeClass('highlighted faded');
         }
 
-        // --- MOCKUP FUNCTIONS FOR DEMO ---
-        // ฟังก์ชันสร้าง KPI หลอกๆ ให้ดูแพง
-        function renderKPIs(data) {
-            const kpiContainer = document.getElementById('sb-kpi');
-            
-            // ตัวอย่าง: ถ้าเป็น Inventory ให้โชว์ Stock, ถ้าเป็น Supplier ให้โชว์ Score
-            let kpis = [];
-            
-            if(data.label.toLowerCase().includes('inventory')) {
-                kpis = [
-                    { label: 'Total Value', value: '$4.2M', trend: '+12%', up: true },
-                    { label: 'Stock Level', value: '85%', trend: '-5%', up: false },
-                    { label: 'Active SKUs', value: '1,240', trend: '', up: true },
-                    { label: 'Reorder Pts', value: '12 Items', trend: 'Critical', up: false }
-                ];
-            } else if (data.label.toLowerCase().includes('supplier')) {
-                kpis = [
-                    { label: 'Reliability', value: '98.5%', trend: 'Stable', up: true },
-                    { label: 'Spend YTD', value: '$12.5M', trend: '+20%', up: false },
-                    { label: 'Contracts', value: '4 Active', trend: '', up: true },
-                    { label: 'Risk Score', value: 'Low', trend: 'Safe', up: true }
-                ];
-            } else {
-                // Default KPIs
-                kpis = [
-                    { label: 'Data Points', value: Math.floor(Math.random()*5000), trend: 'Updated', up: true },
-                    { label: 'Health', value: 'Good', trend: '100%', up: true }
-                ];
-            }
-
-            let html = '';
-            kpis.forEach(k => {
-                html += `
-                    <div class="kpi-card">
-                        <div class="kpi-label">${k.label}</div>
-                        <div class="kpi-value">${k.value}</div>
-                        <div class="kpi-trend ${k.up ? 'trend-up' : 'trend-down'}">${k.trend}</div>
-                    </div>
-                `;
-            });
-            kpiContainer.innerHTML = html;
-        }
-
-        // ฟังก์ชันสร้างตารางหลอกๆ
-        function renderTable(data) {
-            const table = document.getElementById('sb-table');
-            // Mock Data Rows
-            const rows = [
-                { col1: 'AX-9001', col2: 'High Grade Steel', status: 'In Stock' },
-                { col1: 'BB-2201', col2: 'Plastic Resin', status: 'Low Stock' },
-                { col1: 'CC-1029', col2: 'Copper Wire', status: 'Critical' },
-                { col1: 'DD-5502', col2: 'Circuit Board', status: 'In Stock' },
-            ];
-            
-            let html = `<thead><tr><th>ID/SKU</th><th>Description</th><th>Status</th></tr></thead><tbody>`;
-            rows.forEach(r => {
-                let color = r.status === 'Critical' ? '#ef4444' : (r.status === 'Low Stock' ? '#eab308' : '#10b981');
-                html += `
-                    <tr>
-                        <td>${r.col1}</td>
-                        <td>${r.col2}</td>
-                        <td style="color:${color}">${r.status}</td>
-                    </tr>
-                `;
-            });
-            html += `</tbody>`;
-            table.innerHTML = html;
-        }
-
-        // ฟังก์ชันสร้างกราฟ Chart.js
-        function renderChart(data) {
+        function renderChart() {
             const ctx = document.getElementById('myChart').getContext('2d');
-            
-            if (myChartInstance) myChartInstance.destroy();
-
-            // Random Data for demo
-            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-            const dataPoints = labels.map(() => Math.floor(Math.random() * 100));
-
-            myChartInstance = new Chart(ctx, {
-                type: 'line',
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
                     datasets: [{
-                        label: 'Activity Trend',
-                        data: dataPoints,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.4,
-                        fill: true
+                        label: 'Performance',
+                        data: [12, 19, 3, 5],
+                        backgroundColor: '#66fcf1'
                     }]
                 },
                 options: {
@@ -455,8 +334,8 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        x: { grid: { color: '#333' }, ticks: { color: '#888', font: {family: 'JetBrains Mono'} } },
-                        y: { grid: { color: '#333' }, ticks: { color: '#888' } }
+                        x: { ticks: { color: '#fff' }, grid: { color: '#333' } },
+                        y: { ticks: { color: '#fff' }, grid: { color: '#333' } }
                     }
                 }
             });
