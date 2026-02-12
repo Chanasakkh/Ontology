@@ -3,144 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ontology System Interface</title>
+    <title>Dynamic Ontology System (Excel Integration)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
-        /* --- CSS STYLING --- */
+        /* --- CSS STYLE: Dark Tech Theme --- */
         body {
-            background-color: #0a0a0a; /* Dark Background */
+            background-color: #050505;
             color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             margin: 0;
             overflow: hidden;
             display: flex;
             height: 100vh;
         }
 
-        /* พื้นหลัง Grid แบบ Tech */
         #cy {
             width: 100%;
             height: 100%;
             background-image: 
                 linear-gradient(rgba(30, 30, 30, 0.5) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(30, 30, 30, 0.5) 1px, transparent 1px);
-            background-size: 40px 40px;
+            background-size: 50px 50px;
             z-index: 1;
         }
 
-        /* กล่องแสดงข้อมูล (Object Details Panel) */
+        /* ปุ่ม Upload Excel */
+        .upload-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #2563eb, #1d4ed8);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+        
+        .upload-btn:hover {
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.6);
+        }
+
+        #file-input { display: none; }
+
+        /* Detail Panel */
         #info-panel {
             position: absolute;
             top: 100px;
             left: 20px;
-            width: 280px;
+            width: 300px;
             background: rgba(15, 15, 20, 0.95);
             border: 1px solid #333;
-            border-left: 3px solid #3b82f6; /* สีฟ้า Palantir */
-            padding: 15px;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
             border-radius: 4px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            display: none; /* ซ่อนไว้ก่อน */
-            z-index: 10;
-            backdrop-filter: blur(5px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            display: none;
+            z-index: 20;
         }
 
-        #info-panel h3 {
-            margin-top: 0;
+        h3 {
+            margin: 0 0 15px 0;
             color: #fff;
-            font-size: 14px;
-            text-transform: uppercase;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            font-size: 16px;
             letter-spacing: 1px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 8px;
-            margin-bottom: 10px;
         }
 
         .data-row {
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
         }
 
         .label { color: #888; }
-        .value { color: #fff; font-weight: bold; }
-        
-        .status-dot {
-            height: 8px;
-            width: 8px;
-            background-color: #22c55e;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 5px;
-        }
-
-        /* Header ตกแต่ง */
-        .header-ui {
-            position: absolute;
-            top: 0;
-            width: 100%;
-            height: 60px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 5;
-            pointer-events: none;
-        }
-        
-        .title-badge {
-            border: 1px solid #333;
-            padding: 5px 20px;
-            border-radius: 20px;
-            background: rgba(0,0,0,0.6);
-            font-size: 12px;
-            color: #888;
-            letter-spacing: 2px;
-        }
+        .value { color: #fff; font-weight: 600; text-align: right;}
     </style>
 </head>
 <body>
 
-    <div class="header-ui">
-        <div class="title-badge">◇ ONTOLOGY VIEW</div>
+    <div class="upload-container">
+        <span style="color: #aaa; font-size: 12px;">DATA SOURCE:</span>
+        <label for="file-input" class="upload-btn">📂 Import Excel</label>
+        <input type="file" id="file-input" accept=".xlsx, .xls" />
     </div>
 
     <div id="cy"></div>
 
     <div id="info-panel">
         <h3 id="panel-title">OBJECT DETAILS</h3>
-        <div id="panel-content">
-            </div>
+        <div id="panel-content">Select an object to view details</div>
     </div>
 
     <script>
-        // --- JAVASCRIPT CONFIG --- //
-        
-        // 1. กำหนดข้อมูล Nodes (วัตถุ) และ Edges (เส้นเชื่อม)
-        const elements = [
-            // Nodes กลุ่มหลัก
-            { data: { id: 'supplier', label: 'Supplier', type: 'core' } },
-            { data: { id: 'po', label: 'Purchase Order', type: 'doc' } },
-            { data: { id: 'inventory', label: 'Inventory', type: 'object' } },
-            { data: { id: 'material', label: 'Material', type: 'object' } },
-            { data: { id: 'factory', label: 'Factory', type: 'place' } },
-            
-            // Edges เส้นเชื่อมโยง
-            { data: { source: 'supplier', target: 'po', label: 'issues' } },
-            { data: { source: 'po', target: 'inventory', label: 'stocks' } },
-            { data: { source: 'inventory', target: 'material', label: 'contains' } },
-            { data: { source: 'material', target: 'factory', label: 'used_in' } },
-            { data: { source: 'supplier', target: 'factory', label: 'ships_to' } }
-        ];
-
-        // 2. Initialize Cytoscape
+        // 1. Initialize Cytoscape Instance
         var cy = cytoscape({
-            container: document.getElementById('cy'), // ระบุ div ที่จะแสดงกราฟ
-
-            elements: elements,
-
-            style: [ // กำหนดสไตล์ของกราฟ (เหมือน CSS แต่นิยามใน JS)
+            container: document.getElementById('cy'),
+            style: [
                 {
                     selector: 'node',
                     style: {
@@ -150,27 +131,12 @@
                         'font-size': '12px',
                         'text-valign': 'center',
                         'text-halign': 'center',
-                        'width': '120px',
-                        'height': '40px',
+                        'width': '140px',
+                        'height': '50px',
                         'shape': 'round-rectangle',
                         'border-width': 2,
-                        'border-color': '#3b82f6', // สีฟ้าขอบ
-                        'border-opacity': 0.8,
+                        'border-color': '#3b82f6',
                         'text-transform': 'uppercase'
-                    }
-                },
-                {
-                    selector: 'node[type="doc"]', // เปลี่ยนสีตามประเภท
-                    style: {
-                        'border-color': '#8b5cf6', // สีม่วง
-                        'background-color': '#2e1065'
-                    }
-                },
-                {
-                    selector: 'node[type="place"]',
-                    style: {
-                        'border-color': '#10b981', // สีเขียว
-                        'background-color': '#064e3b'
                     }
                 },
                 {
@@ -181,72 +147,131 @@
                         'target-arrow-color': '#4b5563',
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
-                        'font-size': '10px',
-                        'color': '#6b7280',
                         'label': 'data(label)',
+                        'color': '#6b7280',
+                        'font-size': '10px',
                         'text-background-opacity': 1,
-                        'text-background-color': '#0a0a0a',
+                        'text-background-color': '#050505',
                         'text-background-padding': '3px'
                     }
                 },
+                // Highlight Style
                 {
-                    selector: ':selected', // สไตล์ตอนถูกเลือก
+                    selector: '.highlighted',
                     style: {
-                        'border-width': 4,
-                        'border-color': '#fff',
-                        'shadow-blur': 10,
-                        'shadow-color': '#fff'
+                        'background-color': '#1e3a8a',
+                        'line-color': '#3b82f6',
+                        'target-arrow-color': '#3b82f6',
+                        'border-color': '#60a5fa',
+                        'border-width': 3,
+                        'shadow-blur': 20,
+                        'shadow-color': '#3b82f6'
                     }
+                },
+                {
+                    selector: '.faded',
+                    style: { 'opacity': 0.1 }
                 }
             ],
-
-            layout: {
-                name: 'breadthfirst', // การจัดวางแบบลำดับชั้น
-                directed: true,
-                padding: 50,
-                spacingFactor: 1.5
-            }
+            layout: { name: 'grid' } // Default layout before data loads
         });
 
-        // 3. ฟังก์ชัน Click Event (กดที่ Object)
+        // 2. Handle File Upload & Parsing
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var data = new Uint8Array(e.target.result);
+                var workbook = XLSX.read(data, {type: 'array'});
+
+                // อ่าน Sheet "Nodes"
+                var nodesSheet = workbook.Sheets['Nodes'];
+                var nodesData = XLSX.utils.sheet_to_json(nodesSheet);
+
+                // อ่าน Sheet "Edges"
+                var edgesSheet = workbook.Sheets['Edges'];
+                var edgesData = XLSX.utils.sheet_to_json(edgesSheet);
+
+                // แปลงข้อมูลเป็น Format ของ Cytoscape
+                var cyElements = [];
+
+                nodesData.forEach(node => {
+                    cyElements.push({
+                        group: 'nodes',
+                        data: { 
+                            id: node.id.toString(), 
+                            label: node.label, 
+                            type: node.type,
+                            details: node.details // เก็บข้อมูลดิบไว้โชว์
+                        }
+                    });
+                });
+
+                edgesData.forEach(edge => {
+                    cyElements.push({
+                        group: 'edges',
+                        data: { 
+                            source: edge.source.toString(), 
+                            target: edge.target.toString(), 
+                            label: edge.label 
+                        }
+                    });
+                });
+
+                // รีเซ็ตและโหลดกราฟใหม่
+                cy.elements().remove();
+                cy.add(cyElements);
+                
+                // จัด Layout ใหม่ให้สวยงาม
+                cy.layout({
+                    name: 'breadthfirst',
+                    directed: true,
+                    padding: 50,
+                    spacingFactor: 1.5,
+                    animate: true
+                }).run();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 3. Interaction Logic (Click & Highlight)
         cy.on('tap', 'node', function(evt){
             var node = evt.target;
-            var data = node.data();
-
-            // Mockup ข้อมูลที่จะโชว์ใน Panel ตาม ID ของ Node
-            let detailsHtml = '';
             
-            if(data.id === 'supplier') {
-                detailsHtml = `
-                    <div class="data-row"><span class="label">Name</span><span class="value">Apex Industries</span></div>
-                    <div class="data-row"><span class="label">Status</span><span class="value"><span class="status-dot"></span>Active</span></div>
-                    <div class="data-row"><span class="label">Lead Time</span><span class="value">13 Days</span></div>
-                    <div class="data-row"><span class="label">Total Spend</span><span class="value">$51,000</span></div>
-                    <div class="data-row"><span class="label">Score</span><span class="value">93/100</span></div>
-                `;
-            } else if (data.id === 'inventory') {
-                detailsHtml = `
-                    <div class="data-row"><span class="label">SKU</span><span class="value">MX-9920</span></div>
-                    <div class="data-row"><span class="label">Location</span><span class="value">Warehouse A</span></div>
-                    <div class="data-row"><span class="label">Quantity</span><span class="value">4,500 Units</span></div>
-                `;
+            // Highlight Logic
+            cy.elements().removeClass('faded highlighted');
+            var neighborhood = node.neighborhood().add(node);
+            cy.elements().not(neighborhood).addClass('faded');
+            neighborhood.addClass('highlighted');
+
+            // Update Info Panel
+            var detailsRaw = node.data('details') || "No details available";
+            // แปลง string "Key: Value | Key2: Value2" เป็น HTML (ถ้ามี)
+            var detailsHtml = "";
+            
+            if(detailsRaw.includes('|')) {
+                var parts = detailsRaw.split('|');
+                parts.forEach(part => {
+                    var [key, val] = part.split(':');
+                    if(key && val) {
+                        detailsHtml += `<div class="data-row"><span class="label">${key.trim()}</span><span class="value">${val.trim()}</span></div>`;
+                    }
+                });
             } else {
-                detailsHtml = `
-                    <div class="data-row"><span class="label">ID</span><span class="value">#${data.id.toUpperCase()}</span></div>
-                    <div class="data-row"><span class="label">Type</span><span class="value">${data.type}</span></div>
-                    <div class="data-row"><span class="label">Last Updated</span><span class="value">2 mins ago</span></div>
-                `;
+                detailsHtml = `<div class="data-row"><span class="value">${detailsRaw}</span></div>`;
             }
 
-            // อัปเดตและแสดง Panel
-            document.getElementById('panel-title').innerText = data.label + " OBJECT";
+            document.getElementById('panel-title').innerText = node.data('label');
             document.getElementById('panel-content').innerHTML = detailsHtml;
             document.getElementById('info-panel').style.display = 'block';
         });
 
-        // คลิกที่พื้นหลังเพื่อปิด Panel
-        cy.on('tap', function(event){
-            if( event.target === cy ){
+        // Click Background to Reset
+        cy.on('tap', function(evt){
+            if(evt.target === cy){
+                cy.elements().removeClass('faded highlighted');
                 document.getElementById('info-panel').style.display = 'none';
             }
         });
