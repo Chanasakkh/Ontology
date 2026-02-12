@@ -200,7 +200,7 @@
             left: 320px;
             right: 0;
             bottom: 0;
-            background: radial-gradient(ellipse at center, #0a0a0a 0%, #000000 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecef 100%);
             transition: left 0.3s;
         }
 
@@ -858,24 +858,34 @@
                         selector: 'node',
                         style: {
                             'label': 'data(label)',
-                            'color': '#fff',
+                            'color': '#333',
                             'font-size': 11,
-                            'font-weight': 600,
+                            'font-weight': 700,
                             'background-color': ele => Colors[ele.data('type')] || Colors.default,
+                            'background-opacity': 0.9,
+                            'shape': 'roundrectangle', // ใช้ roundrectangle แทน ellipse เพื่อให้ดูเหมือนอาคาร
                             'border-width': 3,
                             'border-color': '#fff',
-                            'width': 50,
-                            'height': 50,
+                            'width': 70,
+                            'height': 70,
                             'text-valign': 'bottom',
                             'text-halign': 'center',
-                            'text-outline-width': 2,
-                            'text-outline-color': '#000',
+                            'text-outline-width': 3,
+                            'text-outline-color': '#fff',
                             'text-wrap': 'wrap',
-                            'text-max-width': 80,
-                            'text-margin-y': 5,
+                            'text-max-width': 100,
+                            'text-margin-y': 8,
                             'transition-property': 'background-color, border-color, border-width, width, height',
                             'transition-duration': '0.2s',
-                            'opacity': 1
+                            'opacity': 1,
+                            
+                            // เพิ่ม shadow effect เพื่อให้ดูเหมือน 3D
+                            'background-image': ele => {
+                                const type = ele.data('type');
+                                // สร้าง gradient แนวทแยงเพื่อให้ดูมีมิติ
+                                return 'linear-gradient(135deg, ' + (Colors[type] || Colors.default) + ' 0%, ' + darkenColor(Colors[type] || Colors.default, 30) + ' 100%)';
+                            },
+                            'background-image-opacity': 1
                         }
                     },
                     {
@@ -883,8 +893,8 @@
                         style: {
                             'border-width': 5,
                             'border-color': '#00ff88',
-                            'width': 60,
-                            'height': 60,
+                            'width': 80,
+                            'height': 80,
                             'overlay-color': '#00ff88',
                             'overlay-padding': 8,
                             'overlay-opacity': 0.2
@@ -902,17 +912,12 @@
                         selector: 'edge',
                         style: {
                             'width': 2,
-                            'line-color': ele => {
-                                const relType = RelationTypes.find(r => r.id === ele.data('relationType'));
-                                return relType ? relType.color : '#555';
-                            },
-                            'target-arrow-color': ele => {
-                                const relType = RelationTypes.find(r => r.id === ele.data('relationType'));
-                                return relType ? relType.color : '#555';
-                            },
+                            'line-color': '#ccc',
+                            'line-style': 'dotted', // เปลี่ยนเป็นเส้นประเหมือนในรูป
+                            'target-arrow-color': '#ccc',
                             'target-arrow-shape': 'triangle',
                             'target-arrow-fill': 'filled',
-                            'arrow-scale': 1.2,
+                            'arrow-scale': 1,
                             'curve-style': 'bezier',
                             'label': 'data(label)',
                             'font-size': 9,
@@ -921,8 +926,8 @@
                             'text-margin-y': -10,
                             'color': '#999',
                             'text-outline-width': 2,
-                            'text-outline-color': '#000',
-                            'opacity': 0.7
+                            'text-outline-color': '#fff',
+                            'opacity': 0.5
                         }
                     },
                     {
@@ -937,16 +942,16 @@
                     {
                         selector: ':parent',
                         style: {
-                            'background-opacity': 0.15,
-                            'background-color': '#1a1a1a',
-                            'border-width': 3,
+                            'background-opacity': 0.05,
+                            'background-color': '#f0f0f0',
+                            'border-width': 2,
                             'border-style': 'dashed',
-                            'border-color': '#00ff88',
+                            'border-color': '#ddd',
                             'label': 'data(label)',
                             'text-valign': 'top',
                             'text-halign': 'center',
-                            'color': '#00ff88',
-                            'font-size': 16,
+                            'color': '#666',
+                            'font-size': 14,
                             'font-weight': 700,
                             'padding': 20
                         }
@@ -982,6 +987,16 @@
                     editNode(evt.target);
                 }
             });
+        }
+        
+        // Helper function to darken color
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace("#",""), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
         }
 
         function initEventListeners() {
@@ -1464,115 +1479,140 @@
         }
 
         function renderLayeredView(ontology) {
-            console.log('🏗️ Rendering TRUE Isometric 3D view...');
+            console.log('🏗️ Rendering Beautiful Isometric 3D view...');
             
             // แยก nodes ตาม type
             const nodesByType = {
                 class: ontology.nodes.filter(n => n.data.type === 'class'),
                 property: ontology.nodes.filter(n => n.data.type === 'property'),
-                instance: ontology.nodes.filter(n => n.data.type === 'instance'),
-                other: ontology.nodes.filter(n => !['class', 'property', 'instance'].includes(n.data.type))
+                instance: ontology.nodes.filter(n => n.data.type === 'instance')
             };
             
-            // กำหนด layers ในแนว Z-axis (ความลึก)
+            // กำหนดชั้นในแนวตั้ง (Y) แบบชัดเจน
             const layers = [
-                { type: 'class', zLevel: 0, yOffset: -200, color: '#4CAF50', label: 'CLASSES' },
-                { type: 'property', zLevel: 1, yOffset: 0, color: '#2196F3', label: 'PROPERTIES' },
-                { type: 'instance', zLevel: 2, yOffset: 200, color: '#E91E63', label: 'INSTANCES' }
+                { 
+                    type: 'class', 
+                    y: -300,           // ชั้นบนสุด
+                    nodeSize: 70,
+                    opacity: 1,
+                    label: '🏛️ CLASSES',
+                    color: '#4CAF50'
+                },
+                { 
+                    type: 'property', 
+                    y: 0,              // ชั้นกลาง
+                    nodeSize: 60,
+                    opacity: 0.95,
+                    label: '⚙️ PROPERTIES',
+                    color: '#2196F3'
+                },
+                { 
+                    type: 'instance', 
+                    y: 300,            // ชั้นล่างสุด
+                    nodeSize: 55,
+                    opacity: 0.9,
+                    label: '🏢 INSTANCES',
+                    color: '#E91E63'
+                }
             ];
             
-            // เพิ่ม nodes ด้วย Isometric transformation
-            layers.forEach(layer => {
+            // วาดแต่ละชั้น
+            layers.forEach((layer, layerIdx) => {
                 const nodes = nodesByType[layer.type];
-                if(nodes.length === 0) return;
+                if(!nodes || nodes.length === 0) return;
                 
-                // คำนวณจำนวนแถวและคอลัมน์
-                const cols = Math.ceil(Math.sqrt(nodes.length));
-                const rows = Math.ceil(nodes.length / cols);
+                // คำนวณการวางแบบ circular สำหรับแต่ละชั้น
+                const radius = 150 + (layerIdx * 50); // ชั้นล่างรัศมีกว้างกว่า
+                const angleStep = (2 * Math.PI) / Math.max(nodes.length, 1);
                 
-                nodes.forEach((node, index) => {
-                    const row = Math.floor(index / cols);
-                    const col = index % cols;
+                nodes.forEach((node, idx) => {
+                    const angle = angleStep * idx;
                     
-                    // Isometric transformation
-                    // สูตร: x_iso = (x - z) * cos(30°)
-                    //       y_iso = y + (x + z) * sin(30°)
-                    const gridX = (col - (cols - 1) / 2) * 150;  // spacing 150px
-                    const gridZ = (row - (rows - 1) / 2) * 150;
-                    const gridY = layer.yOffset;
+                    // วางแบบวงกลมในแต่ละชั้น
+                    const x = Math.cos(angle) * radius;
+                    const z = Math.sin(angle) * radius;
                     
-                    // Isometric projection
-                    const isoX = (gridX - gridZ) * 0.866;  // cos(30°) ≈ 0.866
-                    const isoY = gridY + (gridX + gridZ) * 0.5;  // sin(30°) = 0.5
+                    // Isometric transformation (มุม 30°)
+                    const isoX = (x - z) * 0.866;  // cos(30°)
+                    const isoY = layer.y + (x + z) * 0.25; // sin(30°) แต่ลดลงเพื่อไม่ให้แบนเกิน
                     
-                    // เพิ่ม node
                     cy.add({
                         group: 'nodes',
                         data: {
                             ...node.data,
-                            zLevel: layer.zLevel,
-                            gridX: gridX,
-                            gridZ: gridZ
+                            layer: layer.type,
+                            layerIndex: layerIdx
                         },
                         position: { x: isoX, y: isoY },
-                        classes: `layer-${layer.type}`
+                        style: {
+                            'width': layer.nodeSize,
+                            'height': layer.nodeSize,
+                            'opacity': layer.opacity,
+                            'border-width': 5,
+                            'border-color': '#fff'
+                        }
                     });
+                });
+                
+                // เพิ่ม label สำหรับแต่ละชั้น (พื้นหลัง)
+                cy.add({
+                    group: 'nodes',
+                    data: {
+                        id: `layer_bg_${layer.type}`,
+                        label: layer.label,
+                        isLayerLabel: true
+                    },
+                    position: { x: -400, y: layer.y },
+                    style: {
+                        'width': 180,
+                        'height': 60,
+                        'shape': 'roundrectangle',
+                        'background-color': layer.color,
+                        'background-opacity': 0.15,
+                        'border-width': 2,
+                        'border-color': layer.color,
+                        'border-opacity': 0.5,
+                        'label': 'data(label)',
+                        'font-size': 14,
+                        'font-weight': 700,
+                        'color': layer.color,
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'z-index': 0
+                    },
+                    selectable: false,
+                    grabbable: false
                 });
             });
             
             // เพิ่ม edges
-            cy.add(ontology.edges);
-            
-            // Style ตาม z-level (ยิ่งอยู่หน้า ยิ่งใหญ่และสว่าง)
-            cy.nodes('[zLevel = 0]').style({
-                'width': 45,
-                'height': 45,
-                'border-width': 2,
-                'opacity': 0.85,
-                'z-index': 3
+            ontology.edges.forEach(edge => {
+                const source = cy.getElementById(edge.data.source);
+                const target = cy.getElementById(edge.data.target);
+                
+                if(!source.length || !target.length) return;
+                
+                const sourceLayer = source.data('layerIndex');
+                const targetLayer = target.data('layerIndex');
+                const crossLayer = sourceLayer !== targetLayer;
+                
+                cy.add({
+                    group: 'edges',
+                    data: edge.data,
+                    style: {
+                        'width': crossLayer ? 3 : 2,
+                        'line-style': crossLayer ? 'dashed' : 'solid',
+                        'opacity': crossLayer ? 0.4 : 0.6,
+                        'z-index': crossLayer ? 1 : 5
+                    }
+                });
             });
             
-            cy.nodes('[zLevel = 1]').style({
-                'width': 50,
-                'height': 50,
-                'border-width': 3,
-                'opacity': 0.9,
-                'z-index': 2
-            });
-            
-            cy.nodes('[zLevel = 2]').style({
-                'width': 55,
-                'height': 55,
-                'border-width': 4,
-                'opacity': 1,
-                'z-index': 1
-            });
-            
-            // Edges - ทำให้ดูมีมิติ
-            cy.edges().style({
-                'width': ele => {
-                    const source = cy.getElementById(ele.data('source'));
-                    const target = cy.getElementById(ele.data('target'));
-                    const sourceZ = source.data('zLevel') || 0;
-                    const targetZ = target.data('zLevel') || 0;
-                    // Edge ที่เชื่อมข้าม layers ให้เส้นหนาขึ้น
-                    return Math.abs(sourceZ - targetZ) > 0 ? 3 : 2;
-                },
-                'line-style': ele => {
-                    const source = cy.getElementById(ele.data('source'));
-                    const target = cy.getElementById(ele.data('target'));
-                    const sourceZ = source.data('zLevel') || 0;
-                    const targetZ = target.data('zLevel') || 0;
-                    // Edge ที่เชื่อมข้าม layers ให้เส้นประ
-                    return Math.abs(sourceZ - targetZ) > 0 ? 'dashed' : 'solid';
-                }
-            });
-            
-            // Fit และ center
+            // Fit viewport
             setTimeout(() => {
-                cy.fit(null, 80);
+                cy.fit(cy.nodes('[!isLayerLabel]'), 100);
                 cy.center();
-                console.log('✅ TRUE Isometric 3D rendered!');
+                console.log('✅ Beautiful Isometric 3D rendered!');
             }, 100);
         }
 
