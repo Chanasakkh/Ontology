@@ -1464,41 +1464,116 @@
         }
 
         function renderLayeredView(ontology) {
-            console.log('🌳 Rendering tree hierarchy view...');
+            console.log('🏗️ Rendering TRUE Isometric 3D view...');
             
-            // เพิ่ม nodes และ edges ทั้งหมด
-            cy.add([...ontology.nodes, ...ontology.edges]);
+            // แยก nodes ตาม type
+            const nodesByType = {
+                class: ontology.nodes.filter(n => n.data.type === 'class'),
+                property: ontology.nodes.filter(n => n.data.type === 'property'),
+                instance: ontology.nodes.filter(n => n.data.type === 'instance'),
+                other: ontology.nodes.filter(n => !['class', 'property', 'instance'].includes(n.data.type))
+            };
             
-            // ใช้ breadthfirst layout - แบบ tree ที่ดูง่าย
-            const layout = cy.layout({
-                name: 'breadthfirst',
-                directed: true,
-                padding: 50,
-                spacingFactor: 1.5,
-                animate: true,
-                animationDuration: 800,
-                animationEasing: 'ease-out-cubic',
-                fit: true,
+            // กำหนด layers ในแนว Z-axis (ความลึก)
+            const layers = [
+                { type: 'class', zLevel: 0, yOffset: -200, color: '#4CAF50', label: 'CLASSES' },
+                { type: 'property', zLevel: 1, yOffset: 0, color: '#2196F3', label: 'PROPERTIES' },
+                { type: 'instance', zLevel: 2, yOffset: 200, color: '#E91E63', label: 'INSTANCES' }
+            ];
+            
+            // เพิ่ม nodes ด้วย Isometric transformation
+            layers.forEach(layer => {
+                const nodes = nodesByType[layer.type];
+                if(nodes.length === 0) return;
                 
-                // จัดเรียงจากบนลงล่าง
-                roots: cy.nodes().filter(n => {
-                    // หา root nodes (nodes ที่ไม่มี incoming edges)
-                    const incoming = cy.edges(`[target="${n.id()}"]`);
-                    return incoming.length === 0;
-                }),
+                // คำนวณจำนวนแถวและคอลัมน์
+                const cols = Math.ceil(Math.sqrt(nodes.length));
+                const rows = Math.ceil(nodes.length / cols);
                 
-                maximal: false,
-                circle: false,
-                grid: false,
-                spacingFactor: 1.8,
-                boundingBox: undefined,
-                avoidOverlap: true,
-                nodeDimensionsIncludeLabels: true
+                nodes.forEach((node, index) => {
+                    const row = Math.floor(index / cols);
+                    const col = index % cols;
+                    
+                    // Isometric transformation
+                    // สูตร: x_iso = (x - z) * cos(30°)
+                    //       y_iso = y + (x + z) * sin(30°)
+                    const gridX = (col - (cols - 1) / 2) * 150;  // spacing 150px
+                    const gridZ = (row - (rows - 1) / 2) * 150;
+                    const gridY = layer.yOffset;
+                    
+                    // Isometric projection
+                    const isoX = (gridX - gridZ) * 0.866;  // cos(30°) ≈ 0.866
+                    const isoY = gridY + (gridX + gridZ) * 0.5;  // sin(30°) = 0.5
+                    
+                    // เพิ่ม node
+                    cy.add({
+                        group: 'nodes',
+                        data: {
+                            ...node.data,
+                            zLevel: layer.zLevel,
+                            gridX: gridX,
+                            gridZ: gridZ
+                        },
+                        position: { x: isoX, y: isoY },
+                        classes: `layer-${layer.type}`
+                    });
+                });
             });
             
-            layout.run();
+            // เพิ่ม edges
+            cy.add(ontology.edges);
             
-            console.log('✅ Tree layout complete');
+            // Style ตาม z-level (ยิ่งอยู่หน้า ยิ่งใหญ่และสว่าง)
+            cy.nodes('[zLevel = 0]').style({
+                'width': 45,
+                'height': 45,
+                'border-width': 2,
+                'opacity': 0.85,
+                'z-index': 3
+            });
+            
+            cy.nodes('[zLevel = 1]').style({
+                'width': 50,
+                'height': 50,
+                'border-width': 3,
+                'opacity': 0.9,
+                'z-index': 2
+            });
+            
+            cy.nodes('[zLevel = 2]').style({
+                'width': 55,
+                'height': 55,
+                'border-width': 4,
+                'opacity': 1,
+                'z-index': 1
+            });
+            
+            // Edges - ทำให้ดูมีมิติ
+            cy.edges().style({
+                'width': ele => {
+                    const source = cy.getElementById(ele.data('source'));
+                    const target = cy.getElementById(ele.data('target'));
+                    const sourceZ = source.data('zLevel') || 0;
+                    const targetZ = target.data('zLevel') || 0;
+                    // Edge ที่เชื่อมข้าม layers ให้เส้นหนาขึ้น
+                    return Math.abs(sourceZ - targetZ) > 0 ? 3 : 2;
+                },
+                'line-style': ele => {
+                    const source = cy.getElementById(ele.data('source'));
+                    const target = cy.getElementById(ele.data('target'));
+                    const sourceZ = source.data('zLevel') || 0;
+                    const targetZ = target.data('zLevel') || 0;
+                    // Edge ที่เชื่อมข้าม layers ให้เส้นประ
+                    return Math.abs(sourceZ - targetZ) > 0 ? 'dashed' : 'solid';
+                }
+            });
+            
+            // Fit และ center
+            setTimeout(() => {
+                cy.fit(null, 80);
+                cy.center();
+                console.log('✅ TRUE Isometric 3D rendered!');
+            }, 100);
         }
 
         function initGlobe() {
