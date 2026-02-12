@@ -1340,7 +1340,22 @@
             AppState.currentMode = mode;
             
             document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget?.classList.add('active');
+            
+            // ตรวจสอบว่ามี event หรือไม่ก่อนใช้
+            try {
+                if(typeof event !== 'undefined' && event && event.currentTarget) {
+                    event.currentTarget.classList.add('active');
+                } else {
+                    // ถ้าไม่มี event ให้หาปุ่มที่ตรงกับ mode
+                    const modeIndex = { 'network': 0, 'layers': 1, 'globe': 2 };
+                    const buttons = document.querySelectorAll('.nav-group:nth-child(2) .btn');
+                    if(buttons[modeIndex[mode]]) {
+                        buttons[modeIndex[mode]].classList.add('active');
+                    }
+                }
+            } catch(e) {
+                console.log('Note: Button highlight skipped (no event)');
+            }
             
             const cyDiv = document.getElementById('cy');
             const globeDiv = document.getElementById('globe-viz');
@@ -1360,6 +1375,8 @@
                 const ontology = getCurrentOntology();
                 cy.elements().remove();
                 
+                console.log('🎨 Rendering', mode, 'mode with', ontology.nodes.length, 'nodes and', ontology.edges.length, 'edges');
+                
                 if(mode === 'layers') {
                     renderLayeredView(ontology);
                 } else {
@@ -1370,7 +1387,8 @@
                     cy.resize();
                     cy.fit();
                     cy.center();
-                }, 100);
+                    console.log('✅ Graph rendered successfully!');
+                }, 150);
             }
         }
 
