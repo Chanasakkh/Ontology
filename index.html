@@ -3,514 +3,448 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FOUNDRY // OS - Enterprise Ontology</title>
+    <title>FOUNDRY X // MULTI-VIEW INTELLIGENCE</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
-    <script src="https://unpkg.com/layout-base/layout-base.js"></script>
-    <script src="https://unpkg.com/cose-base/cose-base.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape-context-menus/4.1.0/cytoscape-context-menus.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cytoscape-context-menus/4.1.0/cytoscape-context-menus.min.css">
 
     <style>
-        /* --- CORE SYSTEM THEME --- */
+        /* --- THEME & UI --- */
         :root {
-            --bg-deep: #050505;
-            --bg-panel: rgba(20, 20, 23, 0.95);
-            --border-dim: #333;
-            --border-highlight: #555;
-            
-            --accent-primary: #3b82f6; /* Blue Core */
-            --accent-secondary: #8b5cf6; /* Purple AI */
-            --accent-success: #10b981;
-            --accent-warning: #f59e0b;
-            --accent-danger: #ef4444;
-
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            
-            --glass: blur(12px);
+            --bg: #020204;
+            --panel: rgba(15, 23, 42, 0.90);
+            --border: #334155;
+            --accent: #0ea5e9; /* Sky Blue */
+            --highlight: #facc15; /* Yellow Warning */
+            --danger: #ef4444;
+            --success: #10b981;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
         }
 
-        * { box-sizing: border-box; outline: none; user-select: none; }
+        body { margin: 0; background: var(--bg); font-family: 'Segoe UI', sans-serif; overflow: hidden; color: var(--text-main); }
         
-        body {
-            background-color: var(--bg-deep);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            margin: 0; overflow: hidden; height: 100vh; width: 100vw;
-            display: grid;
-            grid-template-rows: 50px 1fr 30px; /* Top, Main, Status */
-        }
-
-        /* --- 1. TOP COMMAND BAR --- */
-        .top-deck {
-            background: var(--bg-panel); border-bottom: 1px solid var(--border-dim);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px; z-index: 50;
-        }
-        .brand { 
-            font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: 2px; 
-            color: #fff; display: flex; align-items: center; gap: 10px;
-        }
-        .brand span { color: var(--accent-primary); }
-        
-        .toolbar { display: flex; gap: 5px; }
-        .tool-btn {
-            background: transparent; border: 1px solid transparent; color: var(--text-secondary);
-            padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: 0.2s;
-            display: flex; align-items: center; gap: 8px; font-size: 13px;
-        }
-        .tool-btn:hover { background: rgba(255,255,255,0.05); color: #fff; border-color: var(--border-dim); }
-        .tool-btn.active { background: rgba(59, 130, 246, 0.2); color: var(--accent-primary); border-color: var(--accent-primary); }
-
-        .search-box {
-            background: #111; border: 1px solid var(--border-dim); color: #fff;
-            padding: 6px 12px; border-radius: 4px; width: 250px; font-family: 'JetBrains Mono';
-        }
-        .search-box:focus { border-color: var(--accent-primary); }
-
-        /* --- 2. WORKSPACE LAYOUT --- */
-        .workspace { display: flex; position: relative; height: 100%; overflow: hidden; }
-
-        /* Left Panel (AI & Filters) */
-        .left-panel {
-            width: 60px; /* Collapsed state */
-            background: var(--bg-panel); border-right: 1px solid var(--border-dim);
-            display: flex; flex-direction: column; align-items: center; padding-top: 10px;
-            transition: width 0.3s ease; z-index: 40;
-        }
-        .left-panel.expanded { width: 280px; align-items: stretch; padding: 10px; }
-        
-        .icon-nav { display: flex; flex-direction: column; gap: 15px; align-items: center; width: 60px; }
-        .nav-item { 
-            font-size: 18px; color: var(--text-secondary); cursor: pointer; 
-            width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;
-            border-radius: 8px; transition: 0.2s;
-        }
-        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: #fff; }
-
-        .panel-content { display: none; padding-left: 10px; opacity: 0; animation: fadeIn 0.5s forwards;}
-        .left-panel.expanded .panel-content { display: block; }
-
-        /* Main Graph Area */
+        /* 1. VIEWPORT AREA */
         #cy {
-            flex: 1; background-image: 
-                radial-gradient(rgba(50,50,50,0.3) 1px, transparent 1px);
-            background-size: 20px 20px; position: relative;
+            width: 100vw; height: 100vh;
+            background-image: 
+                radial-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 1; transition: background 0.5s;
         }
+
+        /* Background Map Image (For Geo View) - ซ่อนไว้ก่อน */
+        #geo-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg') no-repeat center;
+            background-size: contain; opacity: 0; pointer-events: none; z-index: 0; filter: invert(1) opacity(0.1);
+            transition: opacity 0.5s;
+        }
+
+        /* 2. TOP HUD (Head-Up Display) */
+        .hud-top {
+            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 30px;
+            z-index: 50; pointer-events: none;
+        }
+        .brand { font-size: 18px; font-weight: 800; letter-spacing: 2px; color: #fff; text-shadow: 0 0 10px var(--accent); }
+        .brand i { color: var(--accent); margin-right: 10px; }
+
+        /* View Switcher Tabs */
+        .view-controls { pointer-events: auto; display: flex; gap: 5px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 8px; border: 1px solid var(--border); }
+        .view-btn {
+            background: transparent; border: none; color: var(--text-dim); padding: 8px 15px;
+            cursor: pointer; font-size: 12px; font-weight: bold; text-transform: uppercase;
+            transition: 0.3s; border-radius: 4px; display: flex; align-items: center; gap: 8px;
+        }
+        .view-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .view-btn.active { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
+
+        /* 3. SIDEBAR DASHBOARD (Glassmorphism) */
+        #sidebar {
+            position: absolute; top: 70px; right: 20px; bottom: 20px; width: 350px;
+            background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+            backdrop-filter: blur(12px); box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            transform: translateX(400px); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 100; display: flex; flex-direction: column; overflow: hidden;
+        }
+        #sidebar.active { transform: translateX(0); }
+
+        .sb-header { padding: 20px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+        .sb-title { font-size: 20px; font-weight: 700; color: #fff; margin: 0; }
+        .sb-subtitle { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
         
-        /* Floating Overlay for Graph Stats */
-        .graph-stats {
-            position: absolute; top: 20px; left: 20px; pointer-events: none;
-            font-family: 'JetBrains Mono'; font-size: 10px; color: rgba(255,255,255,0.3);
-        }
-
-        /* Right Panel (Object Details) */
-        .right-panel {
-            width: 0; background: var(--bg-panel); border-left: 1px solid var(--border-dim);
-            transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow-y: auto; z-index: 45; display: flex; flex-direction: column;
-        }
-        .right-panel.active { width: 400px; box-shadow: -10px 0 30px rgba(0,0,0,0.5); }
-
-        .rp-header { padding: 20px; border-bottom: 1px solid var(--border-dim); background: rgba(255,255,255,0.02); }
-        .rp-body { padding: 20px; flex: 1; }
-
-        /* --- 3. COMPONENTS --- */
-        .badge { 
-            padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; 
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        .bg-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
-        .bg-red { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .sb-content { padding: 20px; overflow-y: auto; flex: 1; }
         
-        /* Metric Cards */
-        .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .metric-card { 
-            background: rgba(255,255,255,0.03); border: 1px solid var(--border-dim); 
-            padding: 10px; border-radius: 6px; 
+        /* Widgets */
+        .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .kpi-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .kpi-val { font-size: 24px; font-weight: bold; color: #fff; display: block; }
+        .kpi-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; }
+
+        .alert-box { 
+            background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger); 
+            padding: 15px; margin-bottom: 20px; font-size: 12px; line-height: 1.5; color: #fca5a5;
         }
-        .metric-val { font-size: 18px; font-weight: bold; color: #fff; font-family: 'JetBrains Mono'; }
-        .metric-label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; }
 
-        /* Buttons */
-        .btn-action {
-            width: 100%; background: var(--accent-primary); color: #fff; border: none;
-            padding: 12px; font-weight: 600; cursor: pointer; border-radius: 4px; margin-top: 10px;
-            display: flex; justify-content: center; align-items: center; gap: 8px;
-            transition: 0.2s;
+        /* 4. FOOTER STATS */
+        .footer-stats {
+            position: absolute; bottom: 20px; left: 20px; 
+            font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-dim);
+            z-index: 10;
         }
-        .btn-action:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--accent-primary); }
-
-        /* --- 4. STATUS BAR --- */
-        .status-bar {
-            background: #000; border-top: 1px solid var(--border-dim);
-            display: flex; align-items: center; justify-content: space-between; padding: 0 15px;
-            font-size: 11px; color: #666; font-family: 'JetBrains Mono';
-        }
-        .status-light { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-success); display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
-
-        @keyframes pulse { 0% { opacity: 0.5; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { opacity: 1; box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); } 100% { opacity: 0.5; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Context Menu Override */
-        .cy-context-menus-cxt-menu { background-color: #222; border: 1px solid #444; color: #fff; padding: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
-        .cy-context-menus-cxt-menuitem { padding: 8px 15px; cursor: pointer; font-size: 12px; transition: 0.2s; }
-        .cy-context-menus-cxt-menuitem:hover { background-color: var(--accent-primary); color: #fff; }
-
-        /* Upload Input Hidden */
-        input[type="file"] { display: none; }
+        .live-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; animation: pulse 1s infinite; margin-right: 5px; }
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; box-shadow: 0 0 10px var(--success); } }
 
     </style>
 </head>
 <body>
 
-    <div class="top-deck">
-        <div class="brand">
-            <i class="fas fa-cube"></i> FOUNDRY<span>//OS</span>
-        </div>
+    <div id="geo-bg"></div>
+
+    <div class="hud-top">
+        <div class="brand"><i class="fas fa-network-wired"></i> FOUNDRY<span>X</span></div>
         
-        <div class="toolbar">
-            <input type="text" id="global-search" class="search-box" placeholder="Search Ontology Object..." onkeyup="searchGraph()">
-            <div style="width: 20px;"></div>
-            <button class="tool-btn" onclick="layoutRun('grid')"><i class="fas fa-th"></i> Grid</button>
-            <button class="tool-btn" onclick="layoutRun('circle')"><i class="fas fa-circle-notch"></i> Circle</button>
-            <button class="tool-btn active" onclick="layoutRun('breadthfirst')"><i class="fas fa-sitemap"></i> Hierarchy</button>
-            <div style="width: 20px;"></div>
-            <label for="file-upload" class="tool-btn" style="border-color: #444;"><i class="fas fa-upload"></i> Import Data</label>
-            <input type="file" id="file-upload" accept=".xlsx, .xls">
-            <button class="tool-btn" style="color: var(--accent-warning)" onclick="demoMode()"><i class="fas fa-bolt"></i> Demo Data</button>
+        <div class="view-controls">
+            <button class="view-btn active" onclick="switchView('network')"><i class="fas fa-project-diagram"></i> Network</button>
+            <button class="view-btn" onclick="switchView('geo')"><i class="fas fa-globe-americas"></i> Geo Map</button>
+            <button class="view-btn" onclick="switchView('layers')"><i class="fas fa-layer-group"></i> Layers</button>
         </div>
 
-        <div style="display: flex; gap:10px; align-items:center;">
-            <i class="fas fa-bell" style="color:#666; cursor:pointer;"></i>
-            <div style="width:30px; height:30px; border-radius:50%; background:linear-gradient(45deg, #3b82f6, #8b5cf6);"></div>
+        <button onclick="resetData()" class="view-btn" style="border:1px solid #333"><i class="fas fa-sync"></i> Refresh Data</button>
+    </div>
+
+    <div id="cy"></div>
+
+    <div id="sidebar">
+        <div class="sb-header">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div>
+                    <h2 class="sb-title" id="node-name">Select Node</h2>
+                    <div class="sb-subtitle" id="node-type">WAITING FOR INPUT...</div>
+                </div>
+                <button onclick="closeSidebar()" style="background:none; border:none; color:#666; cursor:pointer; font-size:20px;">&times;</button>
+            </div>
+        </div>
+        <div class="sb-content">
+            <div class="alert-box" id="node-alert" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i> <b>WARNING:</b> Supply chain disruption detected. Estimated delay: 4 Days.
+            </div>
+
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <span class="kpi-val" id="val-1">-</span>
+                    <span class="kpi-label">Efficiency</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-val" id="val-2" style="color:var(--accent)">-</span>
+                    <span class="kpi-label">Volume</span>
+                </div>
+            </div>
+
+            <div style="height: 180px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+                <canvas id="miniChart"></canvas>
+            </div>
+
+            <div style="font-size:12px; color:#fff; font-weight:bold; margin-bottom:10px;">CONNECTED ENTITIES</div>
+            <div id="conn-list" style="font-size:11px; color:var(--text-dim); line-height:1.8;"></div>
+
         </div>
     </div>
 
-    <div class="workspace">
-        
-        <div class="left-panel" id="left-panel">
-            <div class="icon-nav">
-                <div class="nav-item active" onclick="toggleLeftPanel('layers')"><i class="fas fa-layer-group"></i></div>
-                <div class="nav-item" onclick="toggleLeftPanel('ai')"><i class="fas fa-robot"></i></div>
-                <div class="nav-item" onclick="toggleLeftPanel('filter')"><i class="fas fa-filter"></i></div>
-            </div>
-
-            <div class="panel-content">
-                <h3 style="color:#fff; border-bottom:1px solid #333; padding-bottom:10px; margin-top:0;">ONTOLOGY LAYERS</h3>
-                <div style="color:#aaa; font-size:12px; line-height:2;">
-                    <div><input type="checkbox" checked onclick="toggleLayer('supplier')"> <i class="fas fa-circle" style="color:#ef4444; font-size:8px;"></i> Suppliers</div>
-                    <div><input type="checkbox" checked onclick="toggleLayer('factory')"> <i class="fas fa-circle" style="color:#3b82f6; font-size:8px;"></i> Factories</div>
-                    <div><input type="checkbox" checked onclick="toggleLayer('material')"> <i class="fas fa-circle" style="color:#f59e0b; font-size:8px;"></i> Materials</div>
-                    <div><input type="checkbox" checked onclick="toggleLayer('product')"> <i class="fas fa-circle" style="color:#10b981; font-size:8px;"></i> Products</div>
-                </div>
-
-                <div style="margin-top:30px;">
-                    <h3 style="color:#fff; border-bottom:1px solid #333; padding-bottom:10px;">AI ASSISTANT</h3>
-                    <div style="background:#222; padding:10px; border-radius:4px; color:#ddd; font-size:11px; margin-bottom:10px;">
-                        <i class="fas fa-robot" style="color:var(--accent-secondary)"></i> 
-                        System detected a bottleneck at <b>Gigafactory 1</b>. Suggest redirecting supply from secondary warehouse.
-                    </div>
-                    <button class="tool-btn" style="width:100%; justify-content:center;">Ask Co-Pilot</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="cy">
-            <div class="graph-stats" id="graph-meta">
-                NODES: 0 | EDGES: 0 | DENSITY: 0.00
-            </div>
-        </div>
-
-        <div class="right-panel" id="right-panel">
-            <div class="rp-header">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <div>
-                        <h2 id="obj-title" style="margin:0; font-size:20px; color:#fff;">Object Name</h2>
-                        <span id="obj-type" class="badge bg-blue" style="margin-top:5px; display:inline-block;">TYPE</span>
-                    </div>
-                    <button onclick="closeRightPanel()" style="background:none; border:none; color:#666; cursor:pointer; font-size:18px;">&times;</button>
-                </div>
-            </div>
-            <div class="rp-body">
-                <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); padding:10px; border-radius:4px; display:flex; gap:10px; align-items:center; margin-bottom:20px;">
-                    <i class="fas fa-check-circle" style="color:#10b981; font-size:20px;"></i>
-                    <div>
-                        <div style="font-size:12px; font-weight:bold; color:#10b981;">OPERATIONAL</div>
-                        <div style="font-size:10px; color:#aaa;">Last sync: 2 seconds ago</div>
-                    </div>
-                </div>
-
-                <div class="metric-grid">
-                    <div class="metric-card">
-                        <div class="metric-label">Output</div>
-                        <div class="metric-val" id="metric-1">98.2%</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Risk Score</div>
-                        <div class="metric-val" id="metric-2" style="color:#f59e0b">Low</div>
-                    </div>
-                </div>
-
-                <div style="height:200px; margin-bottom:20px;">
-                    <canvas id="detailChart"></canvas>
-                </div>
-
-                <h4 style="color:#888; text-transform:uppercase; font-size:11px; margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:5px;">Properties</h4>
-                <div id="prop-list" style="font-size:12px; color:#ddd; line-height:1.8;">
-                    </div>
-
-                <button class="btn-action"><i class="fas fa-search-location"></i> Trace Roots</button>
-                <button class="btn-action" style="background:#333;"><i class="fas fa-file-alt"></i> View Documentation</button>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="status-bar">
-        <div><span class="status-light"></span> SYSTEM ONLINE // CONNECTED TO PROD_DB_01</div>
-        <div id="coords">LATency: 12ms | FPS: 60</div>
+    <div class="footer-stats">
+        <span class="live-dot"></span> LIVE DATA FEED // <span id="node-count">0</span> NODES TRACKED // MODE: <span id="current-mode">NETWORK</span>
     </div>
 
     <script>
-        // --- 1. SYSTEM CONFIGURATION ---
-        const styles = [
-            {
-                selector: 'node',
-                style: {
-                    'label': 'data(label)',
-                    'color': '#fff',
-                    'font-size': '10px',
-                    'font-family': 'Inter',
-                    'text-valign': 'bottom',
-                    'text-margin-y': 5,
-                    'text-background-color': '#000',
-                    'text-background-opacity': 0.7,
-                    'text-background-padding': '3px',
-                    'width': '40px', 'height': '40px',
-                    'background-color': '#444',
-                    'border-width': 2, 'border-color': '#fff',
-                    'transition-property': 'background-color, border-color, width, height',
-                    'transition-duration': '0.3s'
-                }
-            },
-            // Specific Types Colors
-            { selector: 'node[type="supplier"]', style: { 'background-color': '#ef4444', 'line-color': '#ef4444' } },
-            { selector: 'node[type="factory"]', style: { 'background-color': '#3b82f6', 'line-color': '#3b82f6' } },
-            { selector: 'node[type="material"]', style: { 'background-color': '#f59e0b', 'line-color': '#f59e0b' } },
-            { selector: 'node[type="product"]', style: { 'background-color': '#10b981', 'line-color': '#10b981' } },
-            
-            {
-                selector: 'edge',
-                style: {
-                    'width': 1.5,
-                    'line-color': '#444',
-                    'target-arrow-color': '#444',
-                    'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier',
-                    'arrow-scale': 1
-                }
-            },
-            {
-                selector: '.highlighted',
-                style: {
-                    'background-color': '#fff',
-                    'line-color': '#3b82f6',
-                    'target-arrow-color': '#3b82f6',
-                    'transition-property': 'line-color, target-arrow-color, width',
-                    'transition-duration': '0.5s',
-                    'width': 3,
-                    'z-index': 9999
-                }
-            },
-            {
-                selector: '.faded',
-                style: { 'opacity': 0.1 }
-            },
-            {
-                selector: ':selected',
-                style: {
-                    'border-width': 4,
-                    'border-color': '#fff',
-                    'shadow-blur': 20,
-                    'shadow-color': '#fff',
-                    'width': '50px', 'height': '50px'
-                }
-            }
-        ];
+        // --- 1. CONFIG & ICONS ---
+        // ใช้ FontAwesome บน Node เพื่อความสวยงาม
+        const nodeIcons = {
+            'supplier': '\uf48b', // Truck (FontAwesome Unicode)
+            'factory':  '\uf275', // Industry
+            'warehouse':'\uf494', // Box Open
+            'store':    '\uf290', // Shopping Bag
+            'material': '\uf1b2', // Cube
+        };
 
-        // --- 2. INITIALIZE ENGINE ---
-        var cy = cytoscape({
+        const nodeColors = {
+            'supplier': '#ef4444', // Red
+            'factory':  '#f59e0b', // Orange
+            'warehouse':'#0ea5e9', // Blue
+            'store':    '#10b981', // Green
+            'material': '#8b5cf6', // Purple
+        };
+
+        let cy = cytoscape({
             container: document.getElementById('cy'),
-            style: styles,
-            minZoom: 0.2,
-            maxZoom: 3,
-            wheelSensitivity: 0.2
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(label)',
+                        'font-family': '"Font Awesome 6 Free", "Segoe UI"', // support icons
+                        'font-size': '10px',
+                        'color': '#cbd5e1',
+                        'text-valign': 'bottom',
+                        'text-margin-y': 6,
+                        'background-color': '#1e293b',
+                        'border-width': 2,
+                        'border-color': (ele) => nodeColors[ele.data('type')] || '#64748b',
+                        'width': 45, 'height': 45,
+                        // ใส่ Icon ตรงกลาง Node
+                        'content': (ele) => nodeIcons[ele.data('type')] || '\uf1b2', 
+                        'text-halign': 'center', 'text-valign': 'center',
+                        'font-weight': 900, // For FontAwesome Solid
+                        'color': (ele) => nodeColors[ele.data('type')] || '#fff',
+                        'text-outline-width': 0,
+                    }
+                },
+                {
+                    selector: 'node[label]', // Label text style below icon
+                    style: {
+                        'text-valign': 'bottom',
+                        'text-margin-y': 8,
+                        'font-size': '11px',
+                        'color': '#94a3b8',
+                        'font-family': 'sans-serif',
+                        'font-weight': 'normal',
+                        'text-background-color': '#000',
+                        'text-background-opacity': 0.7,
+                        'text-background-padding': '3px',
+                        'text-background-shape': 'roundrectangle'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 1,
+                        'line-color': '#334155',
+                        'target-arrow-color': '#334155',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'opacity': 0.4
+                    }
+                },
+                // --- FOCUS MODE STYLES ---
+                {
+                    selector: '.dimmed',
+                    style: { 'opacity': 0.1, 'transition-duration': '0.3s' } // หรี่แสง
+                },
+                {
+                    selector: '.highlighted',
+                    style: {
+                        'border-width': 4,
+                        'border-color': '#fff',
+                        'shadow-blur': 30,
+                        'shadow-color': (ele) => nodeColors[ele.data('type')],
+                        'z-index': 999,
+                        'opacity': 1
+                    }
+                },
+                {
+                    selector: 'edge.highlighted',
+                    style: {
+                        'line-color': '#fff',
+                        'target-arrow-color': '#fff',
+                        'width': 3,
+                        'z-index': 99,
+                        'opacity': 1
+                    }
+                }
+            ],
+            layout: { name: 'grid' }
         });
 
-        // --- 3. ADVANCED FEATURES ---
+        // --- 2. DATA GENERATOR (ให้ดูเยอะๆ) ---
+        function generateBigData() {
+            cy.elements().remove();
+            let elements = [];
+            
+            // 1. Create Layers of Supply Chain
+            // Suppliers (Global)
+            for(let i=1; i<=8; i++) {
+                elements.push({ group:'nodes', data: { id: `sup${i}`, label: `Supplier ${i}`, type: 'supplier', country: i%2==0?'USA':'CN' } });
+            }
+            // Factories (Regional)
+            for(let i=1; i<=4; i++) {
+                elements.push({ group:'nodes', data: { id: `fac${i}`, label: `Factory ${i}`, type: 'factory', country: 'TH' } });
+            }
+            // Warehouses (Local)
+            for(let i=1; i<=3; i++) {
+                elements.push({ group:'nodes', data: { id: `wh${i}`, label: `Dist. Center ${i}`, type: 'warehouse', country: 'TH' } });
+            }
+            // Stores (Retail)
+            for(let i=1; i<=10; i++) {
+                elements.push({ group:'nodes', data: { id: `st${i}`, label: `Shop Branch ${i}`, type: 'store', country: 'TH' } });
+            }
+
+            // 2. Create Connections
+            // Supplier -> Factory
+            elements.forEach(n => {
+                if(n.data.type === 'supplier') {
+                    // Randomly connect to 1-2 factories
+                    let target = `fac${Math.ceil(Math.random()*4)}`;
+                    elements.push({ group:'edges', data: { source: n.data.id, target: target } });
+                }
+            });
+            // Factory -> Warehouse
+            for(let i=1; i<=4; i++) {
+                let target = `wh${Math.ceil(Math.random()*3)}`;
+                elements.push({ group:'edges', data: { source: `fac${i}`, target: target } });
+            }
+            // Warehouse -> Store
+            for(let i=1; i<=10; i++) {
+                let source = `wh${Math.ceil(Math.random()*3)}`;
+                elements.push({ group:'edges', data: { source: source, target: `st${i}` } });
+            }
+
+            cy.add(elements);
+            document.getElementById('node-count').innerText = elements.length;
+            switchView('network'); // Default View
+        }
+
+        // --- 3. VIEW MODES (หัวใจสำคัญ) ---
         
-        // A. Context Menu (Right Click)
-        // Note: Needs cytoscape-context-menus extension loaded in head
-        // Simple simulation logic for context menu actions
-        cy.on('cxttap', 'node', function(evt){
-            console.log("Context menu triggered on " + evt.target.id());
-            // In a real implementation, the extension UI handles this.
-            // Since we rely on CDN, we'll simulate an action:
-            alert("System Action: Initiating Deep Scan on " + evt.target.data('label'));
-        });
+        function switchView(mode) {
+            // Update UI Buttons
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget ? event.currentTarget.classList.add('active') : null;
+            document.getElementById('current-mode').innerText = mode.toUpperCase();
 
-        // B. Path Finding (Simulation)
-        let selectedNodes = [];
+            // Reset Styles
+            document.getElementById('geo-bg').style.opacity = (mode === 'geo') ? 0.3 : 0;
+            cy.style().selector('node').style({'opacity': 1}); // Reset Dim
+
+            if(mode === 'network') {
+                // Force Directed Layout (Natural)
+                cy.layout({
+                    name: 'cose',
+                    animate: true,
+                    randomize: false,
+                    componentSpacing: 100,
+                    nodeRepulsion: 400000,
+                    edgeElasticity: 100,
+                    gravity: 80
+                }).run();
+            } 
+            else if (mode === 'geo') {
+                // Geographic Simulation (Fake Map Positions)
+                // สมมติ: ซ้าย=USA, ขวา=China, กลาง=Thailand (Hub)
+                cy.layout({
+                    name: 'preset',
+                    animate: true,
+                    positions: (node) => {
+                        const type = node.data('type');
+                        const id = parseInt(node.id().replace(/\D/g,'')) || 0;
+                        
+                        // Fake Coordinates Logic
+                        if(type === 'supplier') {
+                            // Split between West (USA) and East (Asia)
+                            return id % 2 == 0 
+                                ? { x: 100 + (Math.random()*200), y: 200 + (Math.random()*300) } // USA Zone
+                                : { x: 800 + (Math.random()*200), y: 200 + (Math.random()*300) }; // China Zone
+                        }
+                        if(type === 'factory') {
+                            // Thailand Zone (Center)
+                            return { x: 500 + (Math.random()*100), y: 400 + (Math.random()*100) };
+                        }
+                        if(type === 'warehouse') {
+                            return { x: 500 + (Math.random()*150), y: 600 + (Math.random()*50) };
+                        }
+                        // Stores scattered below
+                        return { x: 300 + (Math.random()*400), y: 700 + (Math.random()*100) };
+                    }
+                }).run();
+                
+                // Zoom out to fit world map feeling
+                cy.animate({ fit: { padding: 50 } });
+            }
+            else if (mode === 'layers') {
+                // Hierarchical View (Iso-metric like)
+                // Top to Bottom flow
+                cy.layout({
+                    name: 'breadthfirst',
+                    directed: true,
+                    spacingFactor: 1.5,
+                    padding: 30,
+                    animate: true
+                }).run();
+            }
+        }
+
+        // --- 4. INTERACTION & FOCUS MODE ---
+        
+        let chartInstance = null;
+
         cy.on('tap', 'node', function(evt){
             const node = evt.target;
             
-            // Logic: Shift+Click to find path between 2 nodes
-            if(evt.originalEvent.shiftKey) {
-                selectedNodes.push(node);
-                node.style('border-color', '#f59e0b'); // Mark as selected
-                
-                if(selectedNodes.length === 2) {
-                    // Run A* or Dijkstra
-                    const aStar = cy.elements().aStar({ root: selectedNodes[0], goal: selectedNodes[1] });
-                    if(aStar.found) {
-                        cy.elements().removeClass('highlighted faded');
-                        aStar.path.addClass('highlighted');
-                        // Fade others
-                        cy.elements().not(aStar.path).addClass('faded');
-                        alert("Path Found: Distance " + aStar.distance);
-                    } else {
-                        alert("No connection found.");
-                    }
-                    // Reset
-                    selectedNodes.forEach(n => n.removeStyle());
-                    selectedNodes = [];
-                }
-            } else {
-                // Normal Click -> Open Details
-                selectedNodes = []; // Reset pathfinding
-                cy.elements().removeClass('faded highlighted');
-                const neighborhood = node.neighborhood().add(node);
-                cy.elements().not(neighborhood).addClass('faded');
-                neighborhood.addClass('highlighted');
-                openRightPanel(node.data());
+            // 4.1 Focus Effect (Dim others)
+            cy.elements().removeClass('highlighted').addClass('dimmed'); // Dim all
+            
+            const connected = node.neighborhood().add(node); // Get neighbors
+            connected.removeClass('dimmed').addClass('highlighted'); // Highlight neighbors
+            
+            // 4.2 Open Sidebar
+            openSidebar(node.data());
+        });
+
+        cy.on('tap', function(e){
+            if(e.target === cy){
+                // Click Background -> Reset
+                cy.elements().removeClass('dimmed highlighted');
+                closeSidebar();
             }
         });
 
-        // Background Tap -> Reset
-        cy.on('tap', function(evt){
-            if(evt.target === cy){
-                cy.elements().removeClass('faded highlighted');
-                closeRightPanel();
-                if(document.getElementById('left-panel').classList.contains('expanded')) toggleLeftPanel();
-            }
-        });
+        function openSidebar(data) {
+            const sb = document.getElementById('sidebar');
+            sb.classList.add('active');
 
-        // --- 4. UI FUNCTIONS ---
+            // Set Data
+            document.getElementById('node-name').innerText = data.label;
+            document.getElementById('node-type').innerText = data.type.toUpperCase() + " NODE";
+            
+            // Mock Data for KPI
+            document.getElementById('val-1').innerText = (Math.random() * 100).toFixed(1) + "%";
+            document.getElementById('val-2').innerText = Math.floor(Math.random() * 5000) + " Units";
 
-        function layoutRun(mode) {
-            let layoutConfig = {
-                name: mode,
-                animate: true,
-                animationDuration: 800,
-                padding: 50
-            };
-            
-            if(mode === 'breadthfirst') {
-                layoutConfig.directed = true;
-                layoutConfig.spacingFactor = 1.5;
-            }
-            
-            cy.layout(layoutConfig).run();
+            // Show Warning if random condition
+            const isAlert = Math.random() > 0.7;
+            document.getElementById('node-alert').style.display = isAlert ? 'block' : 'none';
+            document.getElementById('node-name').style.color = isAlert ? '#ef4444' : '#fff';
+
+            // Connection List
+            const neighbors = cy.getElementById(data.id).neighborhood('node');
+            let listHtml = '';
+            neighbors.forEach(n => {
+                listHtml += `<div><i class="fas fa-link"></i> ${n.data('label')}</div>`;
+            });
+            document.getElementById('conn-list').innerHTML = listHtml || 'No active connections';
+
+            // Chart
+            renderChart();
         }
 
-        function toggleLeftPanel(tab) {
-            const panel = document.getElementById('left-panel');
-            const items = document.querySelectorAll('.nav-item');
-            
-            // Toggle Logic
-            if(panel.classList.contains('expanded')) {
-                // If clicking same tab, close. If diff, switch content (simulated)
-                panel.classList.remove('expanded');
-            } else {
-                panel.classList.add('expanded');
-            }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('active');
         }
 
-        function openRightPanel(data) {
-            const panel = document.getElementById('right-panel');
-            panel.classList.add('active');
-            
-            // Populate Data
-            document.getElementById('obj-title').innerText = data.label;
-            document.getElementById('obj-type').innerText = (data.type || 'Object').toUpperCase();
-            document.getElementById('obj-type').className = `badge ${data.type === 'supplier' ? 'bg-red' : 'bg-blue'}`;
-            
-            // Parse Details
-            let html = '';
-            if(data.details) {
-                data.details.split('|').forEach(p => {
-                    let [k,v] = p.split(':');
-                    if(k&&v) html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span style="color:#888">${k}</span><span>${v}</span></div>`;
-                });
-            } else {
-                html = '<div style="color:#666; text-align:center;">No metadata available</div>';
-            }
-            document.getElementById('prop-list').innerHTML = html;
-
-            // Render Chart
-            renderMiniChart();
-        }
-
-        function closeRightPanel() {
-            document.getElementById('right-panel').classList.remove('active');
-        }
-
-        function toggleLayer(type) {
-            const nodes = cy.nodes(`[type = "${type}"]`);
-            if(nodes.visible()) nodes.hide();
-            else nodes.show();
-        }
-
-        function searchGraph() {
-            const query = document.getElementById('global-search').value.toLowerCase();
-            if(!query) {
-                cy.elements().removeClass('faded highlighted');
-                return;
-            }
-            
-            const target = cy.nodes().filter(n => n.data('label').toLowerCase().includes(query));
-            if(target.length > 0) {
-                cy.elements().addClass('faded');
-                target.removeClass('faded').addClass('highlighted');
-                cy.animate({
-                    fit: { eles: target, padding: 50 },
-                    duration: 500
-                });
-            }
-        }
-
-        // --- 5. CHART ENGINE ---
-        let chartInstance = null;
-        function renderMiniChart() {
-            const ctx = document.getElementById('detailChart').getContext('2d');
+        function renderChart() {
+            const ctx = document.getElementById('miniChart').getContext('2d');
             if(chartInstance) chartInstance.destroy();
             
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['10:00', '11:00', '12:00', '13:00', '14:00'],
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
                     datasets: [{
                         label: 'Throughput',
-                        data: Array.from({length:5}, () => Math.floor(Math.random()*100)),
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        data: Array.from({length:5}, () => Math.random()*100),
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.2)',
                         fill: true,
                         tension: 0.4
                     }]
@@ -521,71 +455,16 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { display: false },
-                        y: { display: true, grid: { color: '#333' } }
+                        y: { display: false } // Minimalist chart
                     }
                 }
             });
         }
+        
+        function resetData() { generateBigData(); }
 
-        // --- 6. DEMO DATA GENERATOR ---
-        function demoMode() {
-            // Generate Complex Supply Chain
-            cy.elements().remove();
-            
-            const nodes = [
-                { id: 's1', label: 'Apex Mining', type: 'supplier', details: 'Loc: Chile|Risk: High' },
-                { id: 's2', label: 'Nordic Chip', type: 'supplier', details: 'Loc: Norway|Risk: Low' },
-                { id: 'm1', label: 'Raw Lithium', type: 'material', details: 'Stock: 400T' },
-                { id: 'm2', label: 'Semiconductors', type: 'material', details: 'Stock: 50k Units' },
-                { id: 'f1', label: 'Gigafactory NV', type: 'factory', details: 'Cap: 98%|Status: Warning' },
-                { id: 'f2', label: 'Assembly DE', type: 'factory', details: 'Cap: 85%|Status: OK' },
-                { id: 'p1', label: 'Model S Plaid', type: 'product', details: 'Backlog: 200' },
-                { id: 'p2', label: 'Cybertruck', type: 'product', details: 'Backlog: 5000' }
-            ];
-
-            const edges = [
-                { source: 's1', target: 'm1' },
-                { source: 's2', target: 'm2' },
-                { source: 'm1', target: 'f1' },
-                { source: 'm2', target: 'f1' },
-                { source: 'm2', target: 'f2' },
-                { source: 'f1', target: 'p1' },
-                { source: 'f1', target: 'p2' },
-                { source: 'f2', target: 'p1' }
-            ];
-
-            nodes.forEach(n => cy.add({ group:'nodes', data:n }));
-            edges.forEach(e => cy.add({ group:'edges', data:e }));
-
-            layoutRun('breadthfirst');
-            updateMeta();
-        }
-
-        function updateMeta() {
-            document.getElementById('graph-meta').innerText = `NODES: ${cy.nodes().length} | EDGES: ${cy.edges().length} | SYSTEM: SECURE`;
-        }
-
-        // --- 7. EXCEL LOADER ---
-        document.getElementById('file-upload').addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (!file) return;
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var data = new Uint8Array(e.target.result);
-                var workbook = XLSX.read(data, {type: 'array'});
-                var nodes = XLSX.utils.sheet_to_json(workbook.Sheets['Nodes']);
-                var edges = XLSX.utils.sheet_to_json(workbook.Sheets['Edges']);
-                cy.elements().remove();
-                nodes.forEach(n => cy.add({ group: 'nodes', data: { id: n.id.toString(), label: n.label, type: (n.type||'').toLowerCase(), details: n.details } }));
-                edges.forEach(e => cy.add({ group: 'edges', data: { source: e.source.toString(), target: e.target.toString(), label: e.label } }));
-                layoutRun('breadthfirst');
-                updateMeta();
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        // Init
-        demoMode();
+        // Start
+        generateBigData();
 
     </script>
 </body>
