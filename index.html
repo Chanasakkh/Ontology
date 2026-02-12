@@ -813,21 +813,21 @@
         };
 
         const Colors = {
-            class: '#00ff88',
-            property: '#00d4ff',
-            instance: '#ff00ff',
-            concept: '#ffaa00',
-            relation: '#ff3366',
-            default: '#666666'
+            class: '#4CAF50',      // เขียวสดใส
+            property: '#2196F3',    // น้ำเงินสดใส  
+            instance: '#E91E63',    // ชมพูเข้ม
+            concept: '#FF9800',     // ส้ม
+            relation: '#9C27B0',    // ม่วง
+            default: '#607D8B'      // เทา
         };
 
         const RelationTypes = [
-            { id: 'subClassOf', label: 'SubClass Of', color: '#00ff88' },
-            { id: 'instanceOf', label: 'Instance Of', color: '#00d4ff' },
-            { id: 'hasProperty', label: 'Has Property', color: '#ffaa00' },
-            { id: 'relatedTo', label: 'Related To', color: '#ff00ff' },
-            { id: 'partOf', label: 'Part Of', color: '#ff3366' },
-            { id: 'dependsOn', label: 'Depends On', color: '#00ff00' }
+            { id: 'subClassOf', label: 'SubClass Of', color: '#4CAF50' },
+            { id: 'instanceOf', label: 'Instance Of', color: '#2196F3' },
+            { id: 'hasProperty', label: 'Has Property', color: '#FF9800' },
+            { id: 'relatedTo', label: 'Related To', color: '#9C27B0' },
+            { id: 'partOf', label: 'Part Of', color: '#E91E63' },
+            { id: 'dependsOn', label: 'Depends On', color: '#F44336' }
         ];
 
         let cy = null;
@@ -859,66 +859,70 @@
                         style: {
                             'label': 'data(label)',
                             'color': '#fff',
-                            'font-size': 12,
-                            'font-weight': 700,
+                            'font-size': 11,
+                            'font-weight': 600,
                             'background-color': ele => Colors[ele.data('type')] || Colors.default,
-                            'border-width': 4,
-                            'border-color': '#000',
-                            'width': 60,
-                            'height': 60,
-                            'text-valign': 'center',
+                            'border-width': 3,
+                            'border-color': '#fff',
+                            'width': 50,
+                            'height': 50,
+                            'text-valign': 'bottom',
                             'text-halign': 'center',
-                            'text-outline-width': 3,
+                            'text-outline-width': 2,
                             'text-outline-color': '#000',
                             'text-wrap': 'wrap',
                             'text-max-width': 80,
+                            'text-margin-y': 5,
                             'transition-property': 'background-color, border-color, border-width, width, height',
-                            'transition-duration': '0.3s',
-                            'opacity': 1,
-                            'z-index': 10
+                            'transition-duration': '0.2s',
+                            'opacity': 1
                         }
                     },
                     {
                         selector: 'node:selected',
                         style: {
-                            'border-width': 6,
+                            'border-width': 5,
                             'border-color': '#00ff88',
-                            'width': 70,
-                            'height': 70,
+                            'width': 60,
+                            'height': 60,
                             'overlay-color': '#00ff88',
-                            'overlay-padding': 10,
-                            'overlay-opacity': 0.3,
-                            'z-index': 999
+                            'overlay-padding': 8,
+                            'overlay-opacity': 0.2
                         }
                     },
                     {
                         selector: 'node:active',
                         style: {
                             'overlay-color': '#00ff88',
-                            'overlay-padding': 15,
-                            'overlay-opacity': 0.5
+                            'overlay-padding': 10,
+                            'overlay-opacity': 0.3
                         }
                     },
                     {
                         selector: 'edge',
                         style: {
-                            'width': 3,
-                            'line-color': ele => RelationTypes.find(r => r.id === ele.data('relationType'))?.color || '#555',
-                            'target-arrow-color': ele => RelationTypes.find(r => r.id === ele.data('relationType'))?.color || '#555',
+                            'width': 2,
+                            'line-color': ele => {
+                                const relType = RelationTypes.find(r => r.id === ele.data('relationType'));
+                                return relType ? relType.color : '#555';
+                            },
+                            'target-arrow-color': ele => {
+                                const relType = RelationTypes.find(r => r.id === ele.data('relationType'));
+                                return relType ? relType.color : '#555';
+                            },
                             'target-arrow-shape': 'triangle',
                             'target-arrow-fill': 'filled',
-                            'arrow-scale': 1.5,
+                            'arrow-scale': 1.2,
                             'curve-style': 'bezier',
                             'label': 'data(label)',
-                            'font-size': 10,
-                            'font-weight': 600,
+                            'font-size': 9,
+                            'font-weight': 500,
                             'text-rotation': 'autorotate',
-                            'text-margin-y': -12,
-                            'color': '#aaa',
+                            'text-margin-y': -10,
+                            'color': '#999',
                             'text-outline-width': 2,
                             'text-outline-color': '#000',
-                            'opacity': 0.8,
-                            'z-index': 5
+                            'opacity': 0.7
                         }
                     },
                     {
@@ -926,9 +930,8 @@
                         style: {
                             'line-color': '#00ff88',
                             'target-arrow-color': '#00ff88',
-                            'width': 5,
-                            'opacity': 1,
-                            'z-index': 999
+                            'width': 4,
+                            'opacity': 1
                         }
                     },
                     {
@@ -977,34 +980,6 @@
             cy.on('dbltap', 'node', evt => {
                 if(!evt.target.isParent()) {
                     editNode(evt.target);
-                }
-            });
-            
-            // Hover effects
-            cy.on('mouseover', 'node', evt => {
-                evt.target.style('cursor', 'pointer');
-                evt.target.animate({
-                    style: { 
-                        'width': 70,
-                        'height': 70,
-                        'border-width': 5
-                    }
-                }, {
-                    duration: 200
-                });
-            });
-            
-            cy.on('mouseout', 'node', evt => {
-                if(!evt.target.selected()) {
-                    evt.target.animate({
-                        style: { 
-                            'width': 60,
-                            'height': 60,
-                            'border-width': 4
-                        }
-                    }, {
-                        duration: 200
-                    });
                 }
             });
         }
@@ -1453,145 +1428,77 @@
             
             cy.add([...ontology.nodes, ...ontology.edges]);
             
-            // ใช้ cose-bilkent layout ที่ดีกว่า (fallback to cose)
+            // ใช้ Concentric layout - วงกลมซ้อนกันตาม type
             const layout = cy.layout({ 
-                name: 'cose',
+                name: 'concentric',
                 animate: true,
-                animationDuration: 1000,
-                animationEasing: 'ease-out',
-                
-                // Physics settings
-                nodeRepulsion: 400000,
-                nodeOverlap: 20,
-                idealEdgeLength: 150,
-                edgeElasticity: 100,
-                nestingFactor: 5,
-                gravity: 80,
-                numIter: 1000,
-                
-                // Initial positions
-                randomize: false,
-                
-                // Quality
-                quality: 'default',
-                
-                // Prevent overlap
-                avoidOverlap: true,
-                
-                // Thread
-                refresh: 20,
+                animationDuration: 800,
+                animationEasing: 'ease-in-out-cubic',
                 fit: true,
-                padding: 50
+                padding: 80,
+                
+                // จัดเรียงตามความสำคัญ
+                concentric: function(node) {
+                    const type = node.data('type');
+                    if(type === 'class') return 100;
+                    if(type === 'property') return 50;
+                    if(type === 'instance') return 10;
+                    return 1;
+                },
+                
+                // ระยะห่างระหว่างวงกลม
+                levelWidth: function() {
+                    return 2;
+                },
+                
+                // จัดให้กระจายสวย
+                spacingFactor: 1.5,
+                startAngle: 0,
+                sweep: undefined,
+                clockwise: true,
+                equidistant: false,
+                minNodeSpacing: 80
+            });
+            
+            layout.run();
+        }
+
+        function renderLayeredView(ontology) {
+            console.log('🌳 Rendering tree hierarchy view...');
+            
+            // เพิ่ม nodes และ edges ทั้งหมด
+            cy.add([...ontology.nodes, ...ontology.edges]);
+            
+            // ใช้ breadthfirst layout - แบบ tree ที่ดูง่าย
+            const layout = cy.layout({
+                name: 'breadthfirst',
+                directed: true,
+                padding: 50,
+                spacingFactor: 1.5,
+                animate: true,
+                animationDuration: 800,
+                animationEasing: 'ease-out-cubic',
+                fit: true,
+                
+                // จัดเรียงจากบนลงล่าง
+                roots: cy.nodes().filter(n => {
+                    // หา root nodes (nodes ที่ไม่มี incoming edges)
+                    const incoming = cy.edges(`[target="${n.id()}"]`);
+                    return incoming.length === 0;
+                }),
+                
+                maximal: false,
+                circle: false,
+                grid: false,
+                spacingFactor: 1.8,
+                boundingBox: undefined,
+                avoidOverlap: true,
+                nodeDimensionsIncludeLabels: true
             });
             
             layout.run();
             
-            // เมื่อ layout เสร็จ ให้ทำ animations
-            layout.on('layoutstop', () => {
-                console.log('✅ Layout complete');
-                
-                // Animate nodes เข้ามาทีละตัว
-                cy.nodes().forEach((node, i) => {
-                    node.animate({
-                        style: { opacity: 1 }
-                    }, {
-                        duration: 300,
-                        delay: i * 20
-                    });
-                });
-            });
-        }
-
-        function renderLayeredView(ontology) {
-            console.log('🏗️ Rendering isometric 3D hierarchy view...');
-            
-            // แยก nodes ตาม type
-            const classes = ontology.nodes.filter(n => n.data.type === 'class');
-            const properties = ontology.nodes.filter(n => n.data.type === 'property');
-            const instances = ontology.nodes.filter(n => n.data.type === 'instance');
-            const others = ontology.nodes.filter(n => 
-                !['class', 'property', 'instance'].includes(n.data.type)
-            );
-            
-            // สร้าง layer containers แบบ isometric
-            const layers = [
-                { id: 'layer_classes', label: '🏛️ CLASSES', nodes: classes, y: 0, color: '#00ff88' },
-                { id: 'layer_properties', label: '⚙️ PROPERTIES', nodes: properties, y: 200, color: '#00d4ff' },
-                { id: 'layer_instances', label: '🏢 INSTANCES', nodes: instances, y: 400, color: '#ff00ff' },
-            ];
-            
-            if(others.length > 0) {
-                layers.push({ id: 'layer_others', label: '📦 OTHERS', nodes: others, y: 600, color: '#ffaa00' });
-            }
-            
-            // สร้าง parent nodes
-            layers.forEach(layer => {
-                if(layer.nodes.length > 0) {
-                    cy.add({
-                        group: 'nodes',
-                        data: { 
-                            id: layer.id, 
-                            label: layer.label,
-                            isLayer: true
-                        },
-                        style: {
-                            'background-color': layer.color,
-                            'border-color': layer.color
-                        }
-                    });
-                }
-            });
-            
-            // วาง nodes ในแต่ละ layer แบบ isometric
-            layers.forEach((layer, layerIndex) => {
-                layer.nodes.forEach((node, nodeIndex) => {
-                    const nodesPerRow = Math.ceil(Math.sqrt(layer.nodes.length));
-                    const row = Math.floor(nodeIndex / nodesPerRow);
-                    const col = nodeIndex % nodesPerRow;
-                    
-                    // Isometric transformation
-                    const isoX = (col - row) * 100;
-                    const isoY = (col + row) * 50 + layer.y;
-                    
-                    cy.add({
-                        group: 'nodes',
-                        data: { 
-                            ...node.data,
-                            parent: layer.id,
-                            isoDepth: layerIndex  // ความลึกสำหรับ shadow
-                        },
-                        position: { x: isoX, y: isoY }
-                    });
-                });
-            });
-            
-            // Add edges
-            cy.add(ontology.edges);
-            
-            // Apply special isometric styling
-            cy.nodes('[?isLayer]').style({
-                'background-opacity': 0.1,
-                'border-width': 3,
-                'border-style': 'dashed',
-                'text-valign': 'top',
-                'font-size': 18,
-                'padding': 30
-            });
-            
-            // เพิ่ม shadow effect ตาม depth
-            cy.nodes('[!isLayer]').forEach(node => {
-                const depth = node.data('isoDepth') || 0;
-                node.style({
-                    'border-width': 5 + depth,
-                    'text-outline-width': 4
-                });
-            });
-            
-            // Fit to view
-            setTimeout(() => {
-                cy.fit(null, 50);
-                console.log('✅ Isometric view rendered');
-            }, 100);
+            console.log('✅ Tree layout complete');
         }
 
         function initGlobe() {
