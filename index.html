@@ -859,46 +859,66 @@
                         style: {
                             'label': 'data(label)',
                             'color': '#fff',
-                            'font-size': 11,
-                            'font-weight': 600,
+                            'font-size': 12,
+                            'font-weight': 700,
                             'background-color': ele => Colors[ele.data('type')] || Colors.default,
-                            'border-width': 3,
-                            'border-color': '#fff',
-                            'width': 50,
-                            'height': 50,
+                            'border-width': 4,
+                            'border-color': '#000',
+                            'width': 60,
+                            'height': 60,
                             'text-valign': 'center',
                             'text-halign': 'center',
-                            'text-outline-width': 2,
+                            'text-outline-width': 3,
                             'text-outline-color': '#000',
-                            'transition-property': 'background-color, border-color, border-width',
-                            'transition-duration': '0.3s'
+                            'text-wrap': 'wrap',
+                            'text-max-width': 80,
+                            'transition-property': 'background-color, border-color, border-width, width, height',
+                            'transition-duration': '0.3s',
+                            'opacity': 1,
+                            'z-index': 10
                         }
                     },
                     {
                         selector: 'node:selected',
                         style: {
-                            'border-width': 5,
+                            'border-width': 6,
                             'border-color': '#00ff88',
+                            'width': 70,
+                            'height': 70,
                             'overlay-color': '#00ff88',
                             'overlay-padding': 10,
-                            'overlay-opacity': 0.3
+                            'overlay-opacity': 0.3,
+                            'z-index': 999
+                        }
+                    },
+                    {
+                        selector: 'node:active',
+                        style: {
+                            'overlay-color': '#00ff88',
+                            'overlay-padding': 15,
+                            'overlay-opacity': 0.5
                         }
                     },
                     {
                         selector: 'edge',
                         style: {
-                            'width': 2,
+                            'width': 3,
                             'line-color': ele => RelationTypes.find(r => r.id === ele.data('relationType'))?.color || '#555',
                             'target-arrow-color': ele => RelationTypes.find(r => r.id === ele.data('relationType'))?.color || '#555',
                             'target-arrow-shape': 'triangle',
+                            'target-arrow-fill': 'filled',
+                            'arrow-scale': 1.5,
                             'curve-style': 'bezier',
                             'label': 'data(label)',
-                            'font-size': 9,
+                            'font-size': 10,
+                            'font-weight': 600,
                             'text-rotation': 'autorotate',
-                            'text-margin-y': -10,
-                            'color': '#ccc',
+                            'text-margin-y': -12,
+                            'color': '#aaa',
                             'text-outline-width': 2,
-                            'text-outline-color': '#000'
+                            'text-outline-color': '#000',
+                            'opacity': 0.8,
+                            'z-index': 5
                         }
                     },
                     {
@@ -906,26 +926,34 @@
                         style: {
                             'line-color': '#00ff88',
                             'target-arrow-color': '#00ff88',
-                            'width': 4
+                            'width': 5,
+                            'opacity': 1,
+                            'z-index': 999
                         }
                     },
                     {
                         selector: ':parent',
                         style: {
-                            'background-opacity': 0.1,
-                            'border-width': 2,
+                            'background-opacity': 0.15,
+                            'background-color': '#1a1a1a',
+                            'border-width': 3,
                             'border-style': 'dashed',
-                            'border-color': '#555',
+                            'border-color': '#00ff88',
                             'label': 'data(label)',
                             'text-valign': 'top',
                             'text-halign': 'center',
-                            'color': '#aaa',
-                            'font-size': 14,
-                            'font-weight': 700
+                            'color': '#00ff88',
+                            'font-size': 16,
+                            'font-weight': 700,
+                            'padding': 20
                         }
                     }
                 ],
-                layout: { name: 'grid' }
+                layout: { name: 'grid' },
+                
+                // Interaction settings
+                minZoom: 0.3,
+                maxZoom: 3
             });
 
             // Event Handlers
@@ -949,6 +977,34 @@
             cy.on('dbltap', 'node', evt => {
                 if(!evt.target.isParent()) {
                     editNode(evt.target);
+                }
+            });
+            
+            // Hover effects
+            cy.on('mouseover', 'node', evt => {
+                evt.target.style('cursor', 'pointer');
+                evt.target.animate({
+                    style: { 
+                        'width': 70,
+                        'height': 70,
+                        'border-width': 5
+                    }
+                }, {
+                    duration: 200
+                });
+            });
+            
+            cy.on('mouseout', 'node', evt => {
+                if(!evt.target.selected()) {
+                    evt.target.animate({
+                        style: { 
+                            'width': 60,
+                            'height': 60,
+                            'border-width': 4
+                        }
+                    }, {
+                        duration: 200
+                    });
                 }
             });
         }
@@ -1393,79 +1449,354 @@
         }
 
         function renderNetworkView(ontology) {
+            console.log('🎨 Rendering network view...');
+            
             cy.add([...ontology.nodes, ...ontology.edges]);
-            cy.layout({ 
+            
+            // ใช้ cose-bilkent layout ที่ดีกว่า (fallback to cose)
+            const layout = cy.layout({ 
                 name: 'cose',
                 animate: true,
-                animationDuration: 500,
-                nodeRepulsion: 8000,
-                idealEdgeLength: 100
-            }).run();
+                animationDuration: 1000,
+                animationEasing: 'ease-out',
+                
+                // Physics settings
+                nodeRepulsion: 400000,
+                nodeOverlap: 20,
+                idealEdgeLength: 150,
+                edgeElasticity: 100,
+                nestingFactor: 5,
+                gravity: 80,
+                numIter: 1000,
+                
+                // Initial positions
+                randomize: false,
+                
+                // Quality
+                quality: 'default',
+                
+                // Prevent overlap
+                avoidOverlap: true,
+                
+                // Thread
+                refresh: 20,
+                fit: true,
+                padding: 50
+            });
+            
+            layout.run();
+            
+            // เมื่อ layout เสร็จ ให้ทำ animations
+            layout.on('layoutstop', () => {
+                console.log('✅ Layout complete');
+                
+                // Animate nodes เข้ามาทีละตัว
+                cy.nodes().forEach((node, i) => {
+                    node.animate({
+                        style: { opacity: 1 }
+                    }, {
+                        duration: 300,
+                        delay: i * 20
+                    });
+                });
+            });
         }
 
         function renderLayeredView(ontology) {
-            // Create layer parents
+            console.log('🏗️ Rendering isometric 3D hierarchy view...');
+            
+            // แยก nodes ตาม type
+            const classes = ontology.nodes.filter(n => n.data.type === 'class');
+            const properties = ontology.nodes.filter(n => n.data.type === 'property');
+            const instances = ontology.nodes.filter(n => n.data.type === 'instance');
+            const others = ontology.nodes.filter(n => 
+                !['class', 'property', 'instance'].includes(n.data.type)
+            );
+            
+            // สร้าง layer containers แบบ isometric
             const layers = [
-                { id: 'layer_1', label: 'CLASSES', type: 'class' },
-                { id: 'layer_2', label: 'PROPERTIES', type: 'property' },
-                { id: 'layer_3', label: 'INSTANCES', type: 'instance' }
+                { id: 'layer_classes', label: '🏛️ CLASSES', nodes: classes, y: 0, color: '#00ff88' },
+                { id: 'layer_properties', label: '⚙️ PROPERTIES', nodes: properties, y: 200, color: '#00d4ff' },
+                { id: 'layer_instances', label: '🏢 INSTANCES', nodes: instances, y: 400, color: '#ff00ff' },
             ];
             
+            if(others.length > 0) {
+                layers.push({ id: 'layer_others', label: '📦 OTHERS', nodes: others, y: 600, color: '#ffaa00' });
+            }
+            
+            // สร้าง parent nodes
             layers.forEach(layer => {
-                cy.add({
-                    group: 'nodes',
-                    data: { id: layer.id, label: layer.label }
+                if(layer.nodes.length > 0) {
+                    cy.add({
+                        group: 'nodes',
+                        data: { 
+                            id: layer.id, 
+                            label: layer.label,
+                            isLayer: true
+                        },
+                        style: {
+                            'background-color': layer.color,
+                            'border-color': layer.color
+                        }
+                    });
+                }
+            });
+            
+            // วาง nodes ในแต่ละ layer แบบ isometric
+            layers.forEach((layer, layerIndex) => {
+                layer.nodes.forEach((node, nodeIndex) => {
+                    const nodesPerRow = Math.ceil(Math.sqrt(layer.nodes.length));
+                    const row = Math.floor(nodeIndex / nodesPerRow);
+                    const col = nodeIndex % nodesPerRow;
+                    
+                    // Isometric transformation
+                    const isoX = (col - row) * 100;
+                    const isoY = (col + row) * 50 + layer.y;
+                    
+                    cy.add({
+                        group: 'nodes',
+                        data: { 
+                            ...node.data,
+                            parent: layer.id,
+                            isoDepth: layerIndex  // ความลึกสำหรับ shadow
+                        },
+                        position: { x: isoX, y: isoY }
+                    });
                 });
             });
             
-            // Assign nodes to layers
-            const layeredNodes = ontology.nodes.map(n => {
-                let parentId = 'layer_1';
-                if(n.data.type === 'property') parentId = 'layer_2';
-                if(n.data.type === 'instance') parentId = 'layer_3';
-                
-                return {
-                    group: 'nodes',
-                    data: { ...n.data, parent: parentId }
-                };
+            // Add edges
+            cy.add(ontology.edges);
+            
+            // Apply special isometric styling
+            cy.nodes('[?isLayer]').style({
+                'background-opacity': 0.1,
+                'border-width': 3,
+                'border-style': 'dashed',
+                'text-valign': 'top',
+                'font-size': 18,
+                'padding': 30
             });
             
-            cy.add([...layeredNodes, ...ontology.edges]);
-            cy.layout({ 
-                name: 'dagre',
-                rankDir: 'TB',
-                padding: 50,
-                spacingFactor: 1.5
-            }).run();
+            // เพิ่ม shadow effect ตาม depth
+            cy.nodes('[!isLayer]').forEach(node => {
+                const depth = node.data('isoDepth') || 0;
+                node.style({
+                    'border-width': 5 + depth,
+                    'text-outline-width': 4
+                });
+            });
+            
+            // Fit to view
+            setTimeout(() => {
+                cy.fit(null, 50);
+                console.log('✅ Isometric view rendered');
+            }, 100);
         }
 
         function initGlobe() {
-            if(globe) return;
+            if(globe) {
+                updateGlobeData();
+                return;
+            }
             
             const ontology = getCurrentOntology();
-            const gData = ontology.nodes.map(n => ({
-                lat: (Math.random() * 160) - 80,
-                lng: (Math.random() * 360) - 180,
-                color: Colors[n.data.type] || Colors.default,
-                name: n.data.label,
-                size: 0.5
+            
+            // สร้างข้อมูลจุดบนโลก พร้อม real coordinates ถ้ามี
+            const gData = ontology.nodes.map((n, i) => {
+                // พยายามหา coordinates จาก properties
+                let lat, lng;
+                if(n.data.properties && n.data.properties.lat && n.data.properties.lng) {
+                    lat = parseFloat(n.data.properties.lat);
+                    lng = parseFloat(n.data.properties.lng);
+                } else {
+                    // Random positions ถ้าไม่มี
+                    lat = (Math.random() * 160) - 80;
+                    lng = (Math.random() * 360) - 180;
+                }
+                
+                return {
+                    lat,
+                    lng,
+                    color: Colors[n.data.type] || Colors.default,
+                    name: n.data.label,
+                    size: 0.8,
+                    nodeId: n.data.id,
+                    nodeData: n.data
+                };
+            });
+            
+            // สร้าง arcs สำหรับ edges
+            const arcsData = ontology.edges.map(e => ({
+                startLat: gData.find(d => d.nodeId === e.data.source)?.lat || 0,
+                startLng: gData.find(d => d.nodeId === e.data.source)?.lng || 0,
+                endLat: gData.find(d => d.nodeId === e.data.target)?.lat || 0,
+                endLng: gData.find(d => d.nodeId === e.data.target)?.lng || 0,
+                color: RelationTypes.find(r => r.id === e.data.relationType)?.color || '#00ff88',
+                label: e.data.label
             }));
+            
+            console.log('🌍 Initializing interactive globe with', gData.length, 'points');
             
             globe = Globe()
             (document.getElementById('globe-viz'))
             .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
             .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+            
+            // Points
             .pointsData(gData)
-            .pointAltitude(0.1)
+            .pointAltitude(0.01)
             .pointColor('color')
             .pointRadius('size')
+            .pointLabel(d => `
+                <div style="background: rgba(0,0,0,0.9); padding: 10px; border-radius: 6px; border: 2px solid ${d.color};">
+                    <div style="color: ${d.color}; font-weight: bold; font-size: 14px;">${d.name}</div>
+                    <div style="color: #aaa; font-size: 11px; margin-top: 4px;">Type: ${d.nodeData.type}</div>
+                    <div style="color: #00ff88; font-size: 10px; margin-top: 4px;">Click to view details</div>
+                </div>
+            `)
+            
+            // Arcs (relationships)
+            .arcsData(arcsData)
+            .arcColor('color')
+            .arcDashLength(0.4)
+            .arcDashGap(0.2)
+            .arcDashAnimateTime(2000)
+            .arcStroke(0.5)
+            .arcLabel(d => d.label)
+            
+            // Labels
             .labelsData(gData)
             .labelLat(d => d.lat)
             .labelLng(d => d.lng)
             .labelText(d => d.name)
-            .labelSize(1.5)
-            .labelDotRadius(0.5)
-            .labelColor(() => 'rgba(255,255,255,0.8)');
+            .labelSize(1.2)
+            .labelDotRadius(0.4)
+            .labelColor(() => 'rgba(255,255,255,0.9)')
+            .labelResolution(2)
+            
+            // Camera settings
+            .pointOfView({ altitude: 2.5 })
+            
+            // Click handler
+            .onPointClick((point, event) => {
+                console.log('🎯 Globe point clicked:', point.name);
+                
+                // แสดงข้อมูลใน right panel
+                showNodeDetailsFromGlobe(point.nodeData);
+                
+                // Zoom เข้าไปที่จุดนั้น
+                globe.pointOfView({
+                    lat: point.lat,
+                    lng: point.lng,
+                    altitude: 1.5
+                }, 1000);
+            })
+            
+            // Hover handler
+            .onPointHover((point) => {
+                document.getElementById('globe-viz').style.cursor = point ? 'pointer' : 'grab';
+            });
+            
+            // Auto rotate
+            const controls = globe.controls();
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+            
+            console.log('✅ Interactive globe initialized');
+        }
+        
+        function updateGlobeData() {
+            if(!globe) return;
+            
+            const ontology = getCurrentOntology();
+            const gData = ontology.nodes.map((n, i) => {
+                let lat, lng;
+                if(n.data.properties && n.data.properties.lat && n.data.properties.lng) {
+                    lat = parseFloat(n.data.properties.lat);
+                    lng = parseFloat(n.data.properties.lng);
+                } else {
+                    lat = (Math.random() * 160) - 80;
+                    lng = (Math.random() * 360) - 180;
+                }
+                
+                return {
+                    lat, lng,
+                    color: Colors[n.data.type] || Colors.default,
+                    name: n.data.label,
+                    size: 0.8,
+                    nodeId: n.data.id,
+                    nodeData: n.data
+                };
+            });
+            
+            const arcsData = ontology.edges.map(e => ({
+                startLat: gData.find(d => d.nodeId === e.data.source)?.lat || 0,
+                startLng: gData.find(d => d.nodeId === e.data.source)?.lng || 0,
+                endLat: gData.find(d => d.nodeId === e.data.target)?.lat || 0,
+                endLng: gData.find(d => d.nodeId === e.data.target)?.lng || 0,
+                color: RelationTypes.find(r => r.id === e.data.relationType)?.color || '#00ff88',
+                label: e.data.label
+            }));
+            
+            globe.pointsData(gData);
+            globe.arcsData(arcsData);
+            globe.labelsData(gData);
+        }
+        
+        function showNodeDetailsFromGlobe(data) {
+            const panel = document.getElementById('rightPanel');
+            const content = document.getElementById('panelContent');
+            
+            document.getElementById('panelTitle').textContent = data.label;
+            
+            let html = `
+                <div class="property-group">
+                    <label>ID</label>
+                    <input type="text" value="${data.id}" readonly />
+                </div>
+                <div class="property-group">
+                    <label>Type</label>
+                    <input type="text" value="${data.type}" readonly />
+                </div>
+            `;
+            
+            if(data.properties) {
+                html += '<h3 style="margin: 20px 0 10px; font-size: 14px; color: var(--accent);">PROPERTIES</h3>';
+                for(const [key, value] of Object.entries(data.properties)) {
+                    html += `
+                        <div class="property-group">
+                            <label>${key}</label>
+                            <input type="text" value="${value}" readonly />
+                        </div>
+                    `;
+                }
+            }
+            
+            html += `
+                <button class="btn" style="width: 100%; margin-top: 20px;" onclick="switchToNodeInNetwork('${data.id}')">
+                    <i class="fas fa-project-diagram"></i> View in Network
+                </button>
+            `;
+            
+            content.innerHTML = html;
+            panel.classList.add('active');
+        }
+        
+        function switchToNodeInNetwork(nodeId) {
+            setMode('network');
+            setTimeout(() => {
+                const node = cy.getElementById(nodeId);
+                if(node) {
+                    cy.animate({
+                        center: { eles: node },
+                        zoom: 2
+                    }, {
+                        duration: 500
+                    });
+                    selectNode(node);
+                }
+            }, 500);
         }
 
         // ========================================
